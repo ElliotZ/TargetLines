@@ -9,9 +9,6 @@ namespace TargetLines;
 
 internal static class ShaderSingleton {
     public enum Shader {
-#if HELLOTRI_TEST
-        HelloTri,
-#endif
         Line,
         Count
     }
@@ -30,6 +27,7 @@ internal static class ShaderSingleton {
     public static GeometryShader[] GeometryShaders = new GeometryShader[SHADER_COUNT];
 
     public static bool Initialized = false;
+    public static bool Fail = false;
 
     public static void Initialize(Device device) {
         if (Initialized) {
@@ -57,6 +55,7 @@ internal static class ShaderSingleton {
             }
             catch (Exception ex) {
                 Service.Logger.Error($"Failed to compile {ShaderPreambleVertex}? {vertexFile}: {ex.Message}");
+                Fail = true;
             }
 
             try {
@@ -74,6 +73,7 @@ internal static class ShaderSingleton {
             }
             catch (Exception ex) {
                 Service.Logger.Error($"Failed to compile {ShaderPreamblePixel}? {pixelFile}: {ex.Message}");
+                Fail = true;
             }
 
             try
@@ -93,6 +93,7 @@ internal static class ShaderSingleton {
             catch (Exception ex)
             {
                 Service.Logger.Error($"Failed to compile {ShaderPreambleGeometry}? {geoFile}: {ex.Message}");
+                Fail = true;
             }
         }
 

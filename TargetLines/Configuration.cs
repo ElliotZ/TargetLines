@@ -105,17 +105,17 @@ public class LineColor {
 }
 
 public class TargetSettingsPair {
-    public TargetSettings From;
-    public TargetSettings To;
-    public LineColor LineColor;
+    public TargetSettings From = new TargetSettings();
+    public TargetSettings To = new TargetSettings();
+    public LineColor LineColor = new LineColor();
     public int Priority = -1;
     public Guid UniqueId = Guid.Empty;
 
-    public TargetSettingsPair(TargetSettings from, TargetSettings to, LineColor lineColor) {
+    public TargetSettingsPair(TargetSettings from, TargetSettings to, LineColor lineColor, int priority = -1) {
         From = from;
         To = to;
         LineColor = lineColor;
-        Priority = -1;
+        Priority = priority;
         UniqueId = Guid.NewGuid();
     }
 
@@ -176,11 +176,12 @@ public class SavedConfig {
 
     public bool DebugDynamicSampleCount = false;
     public bool DebugUICollision = false;
+    public bool DebugUIFinalRectList = true;
+    public bool DebugUICollisionArea = true;
+    public bool DebugUIInitialRectList = true;
+    public bool DebugUIMergedRectList = true;
     public bool DebugDXLines = false;
 
-#if HELLOTRI_TEST
-    public bool HelloTriTest = false;
-#endif
     public LineColor LineColor = new LineColor(new RGBA(0xC0, 0x80, 0x80, 0x80), new RGBA(0x80, 0x00, 0x00, 0x00), true); // fallback color
     public LineDeathAnimation DeathAnimation = LineDeathAnimation.Linear;
     public float DeathAnimationTimeScale = 1.0f;
@@ -232,6 +233,13 @@ public class Configuration : IPluginConfiguration {
                     new TargetSettings(TargetFlags.Enemy),
                     new TargetSettings(TargetFlags.Enemy),
                     new LineColor(new RGBA(0xC0, 0xB0, 0x27, 0x9C), true, true) // purpleish
+                ),
+                // any -> any default (invisible)
+                new TargetSettingsPair(
+                    new TargetSettings(TargetFlags.Any),
+                    new TargetSettings(TargetFlags.Any),
+                    new LineColor(new RGBA(0xC0, 0x80, 0x80, 0x80), false, false), // grey
+                    0
                 )
             };
     }

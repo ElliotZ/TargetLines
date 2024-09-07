@@ -1,29 +1,15 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using DrahsidLib;
+using FFXIVClientStructs.FFXIV.Client.Game.Control;
+
+using Vector3 = System.Numerics.Vector3;
 using SharpDX;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using Device = SharpDX.Direct3D11.Device;
-using Matrix4x4 = FFXIVClientStructs.FFXIV.Common.Math.Matrix4x4;
 
 namespace TargetLines;
-
-[StructLayout(LayoutKind.Explicit)]
-struct MatrixSingleton {
-    [FieldOffset(0x1B4)] public Matrix4x4 ViewProjectionMatrix;
-}
-
-// real struct is shifted
-[StructLayout(LayoutKind.Explicit, Size = 0x130)]
-public struct RenderCamera {
-    [FieldOffset(0x10)] public Matrix4x4 ViewMatrix;
-    [FieldOffset(0x50)] public Matrix4x4 ProjectionMatrix;
-    [FieldOffset(0xA8)] public float FoV;
-    [FieldOffset(0xAC)] public float AspectRatio;
-    [FieldOffset(0xB0)] public float NearPlane;
-    [FieldOffset(0xB4)] public float FarPlane;
-}
 
 public class RawDX11Scene {
     public bool Initialized { get; private set; } = false;
@@ -33,6 +19,10 @@ public class RawDX11Scene {
     
     public ViewportF Viewport { get; internal set; }
 
+    public Matrix ViewMatrix = Matrix.Identity;
+    public Matrix ProjectionMatrix = Matrix.Identity;
+    public Matrix ViewProjectionMatrix = Matrix.Identity;
+    public Vector3 CameraPosition = Vector3.Zero;
 
     public delegate void NewFrameDelegate();
 
@@ -44,16 +34,12 @@ public class RawDX11Scene {
     private int targetWidth;
     private int targetHeight;
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate IntPtr GetEngineCoreSingletonDelegate();
 
-    private unsafe delegate MatrixSingleton* GetMatrixSingletonDelegate();
-    private IntPtr GetMatrixSingletonPtr { get; set; }
-    private GetMatrixSingletonDelegate GetMatrixSingleton { get; set; }
-
+    private IntPtr _engineCoreSingleton;
 
     public RawDX11Scene(IntPtr nativeSwapChain) {
-        GetMatrixSingletonPtr = Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4C 24 ?? 48 89 4c 24 ?? 4C 8D 4D ?? 4C 8D 44 24 ??");
-        GetMatrixSingleton = Marshal.GetDelegateForFunctionPointer<GetMatrixSingletonDelegate>(GetMatrixSingletonPtr);
-
         SwapChain = new SwapChain(nativeSwapChain);
         Device = SwapChain.GetDevice<Device>();
         deviceContext = Device.ImmediateContext;
@@ -68,6 +54,8 @@ public class RawDX11Scene {
         Viewport = new ViewportF(0, 0, SwapChain.Description.ModeDescription.Width, SwapChain.Description.ModeDescription.Height, 0, 1.0f);
         WindowHandlePtr = SwapChain.Description.OutputHandle;
 
+        _engineCoreSingleton = Marshal.GetDelegateForFunctionPointer<GetEngineCoreSingletonDelegate>(Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4C 24 ?? 48 89 4C 24 ?? 4C 8D 4D ?? 4C 8D 44 24 ??"))();
+
         Initialized = true;
     }
 
@@ -79,6 +67,14 @@ public class RawDX11Scene {
         Dispose(true);
     }
 
+    public unsafe Matrix ReadMatrix(IntPtr address) {
+        var p = (float*)address;
+        Matrix matrix = new();
+        for (int index = 0; index < 16; index++) {
+            matrix[index] = *p++;
+        }
+        return matrix;
+    }
 
     public void Render() {
         if (targetWidth <= 0 || targetHeight <= 0) {
@@ -100,6 +96,29 @@ public class RawDX11Scene {
 
         var blendState = new BlendState(Device, blendStateDescription);
         deviceContext.OutputMerger.SetBlendState(blendState);
+
+        unsafe
+        {
+            var control = Control.Instance();
+            if (control != null)
+            {
+                /*
+                IntPtr viewProjectionMatrix = (IntPtr)(&control->ViewProjectionMatrix);
+                ViewProjectionMatrix = ReadMatrix(viewProjectionMatrix);
+                ProjectionMatrix = ReadMatrix(viewProjectionMatrix - 0x40);
+                ViewMatrix = ViewProjectionMatrix * Matrix.Invert(ProjectionMatrix);
+                */
+
+                var cam = control->CameraManager.GetActiveCamera();
+                if (cam != null) {
+                    CameraPosition = cam->CameraBase.SceneCamera.Position;
+                }
+
+                ViewProjectionMatrix = ReadMatrix(_engineCoreSingleton + 0x1B4);
+                ProjectionMatrix = ReadMatrix(_engineCoreSingleton + 0x174);
+                ViewMatrix = ReadMatrix(_engineCoreSingleton + 0x134);
+            }
+        }
 
 
         OnNewFrame?.Invoke();

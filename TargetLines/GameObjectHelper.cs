@@ -44,6 +44,11 @@ public static class GameObjectExtensions {
         return Marshal.PtrToStructure<float>(obj.Address + 0x124);
     }
 
+    public static float GetHeadHeight(this IGameObject obj)
+    {
+        return Marshal.PtrToStructure<float>(obj.Address + 0x124) - 0.2f;
+    }
+
     public static bool GetIsPlayerCharacter(this IGameObject obj) {
         return obj.ObjectKind == ObjectKind.Player;
     }

@@ -31,15 +31,7 @@
     	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     	  <Visible>false</Visible>
     	</Content>
-		<Content Include="Data\Shaders\PixelShaderHelloTri.hlsl">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Visible>false</Visible>
-		</Content>
 		<Content Include="Data\Shaders\PixelShaderLine.hlsl">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Visible>false</Visible>
-		</Content>
-		<Content Include="Data\Shaders\VertexShaderHelloTri.hlsl">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Visible>false</Visible>
 		</Content>
@@ -69,7 +61,7 @@
   
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Unlocked|AnyCPU'">
 	  <DefineConstants>PROBABLY_BAD</DefineConstants>
-	  <Optimize>True</Optimize>
+	  <Optimize>False</Optimize>
 	</PropertyGroup>
 
 	<ItemGroup>

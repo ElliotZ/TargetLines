@@ -23,18 +23,20 @@ internal struct LinePoint {
     }
 }
 
-internal unsafe class TargetLine {
+public unsafe class TargetLine {
     public enum LineState {
         NewTarget, // new target (from no target)
         Dying, // no target, fading away
+        Dying2, // render flags 0x800
         Switching, // switching to different target
         Idle // being targeted
     };
 
-    public IGameObject* Self;
+    public IGameObject Self;
 
     public LineState State = LineState.NewTarget;
-    public bool ShouldDelete = false;
+    public bool Sleeping = true;
+    public TargetSettingsPair LineSettings = new TargetSettingsPair(new TargetSettings(), new TargetSettings(), new LineColor());
 
     private Vector2 ScreenPos = new Vector2();
     private Vector2 MidScreenPos = new Vector2();
@@ -42,17 +44,15 @@ internal unsafe class TargetLine {
 
     private Vector3 Position = new Vector3();
     private Vector3 MidPosition = new Vector3();
-    private Vector3 TargetPosition = new Vector3();
-    private RGBA LineColor = new RGBA(0, 0, 0, 0);
-    private RGBA OutlineColor = new RGBA(0, 0, 0, 0);
 
+    private Vector3 TargetPosition = new Vector3();
     private Vector3 LastTargetPosition = new Vector3();
     private Vector3 LastTargetPosition2 = new Vector3();
+
+    private RGBA LineColor = new RGBA(0, 0, 0, 0);
+    private RGBA OutlineColor = new RGBA(0, 0, 0, 0);
     private RGBA LastLineColor = new RGBA(0, 0, 0, 0);
     private RGBA LastOutlineColor = new RGBA(0, 0, 0, 0);
-    
-    private bool UseQuad = false;
-    private bool Visible = true;
 
     private bool HasTarget = false;
     private bool HadTarget = false;
@@ -69,84 +69,64 @@ internal unsafe class TargetLine {
 
     private Stopwatch FPPTransition = new Stopwatch();
     private float FPPLastTransition = 0.0f;
-
-    private LinePoint[] Points;
-    private float LinePointStep;
+    
+    private LinePoint[] Points = new LinePoint[3];
+    private int SampleCount = 3;
+    private float LinePointStep = 1.0f / (3.0f - 1);
 
     private const float HPI = MathF.PI * 0.5f;
-
     private readonly Vector2 uv1 = new Vector2(0, 0);
     private readonly Vector2 uv2 = new Vector2(0, 1.0f);
     private readonly Vector2 uv3 = new Vector2(1.0f, 1.0f);
     private readonly Vector2 uv4 = new Vector2(1.0f, 0);
 
-    RGBA tempLineColor = new RGBA(0, 0, 0, 0);
-    RGBA tempOutlineColor = new RGBA(0, 0, 0, 0);
+    public TargetLine() {
+        InitializeTargetLine();
+    }
 
-    public TargetLine(IGameObject* obj) {
-        if (obj != null)
-        {
+    public unsafe void InitializeTargetLine(IGameObject obj = null) {
+        if (obj != null) {
             Self = obj;
-            if (Self->TargetObject != null)
-            {
-                LastTargetId = Self->TargetObject.TargetObjectId;
-                LastTargetPosition = Self->TargetObject.Position;
+            if (Self.TargetObject != null && Self.TargetObject.IsValid()) {
+                LastTargetId = Self.TargetObject.TargetObjectId;
+                LastTargetPosition = Self.TargetObject.Position;
                 LastTargetPosition2 = LastTargetPosition;
             }
-            else
-            {
-                LastTargetPosition = Self->Position;
+            else {
+                LastTargetPosition = Self.Position;
                 LastTargetPosition2 = LastTargetPosition;
             }
 
-            InitializeLinePoints(1);
+            if (Sleeping) {
+                State = LineState.NewTarget;
+            }
+
+            Sleeping = false;
+            InitializeLinePoints();
         }
     }
 
-    private void InitializeLinePoints(int sampleCount = 0) {
-        Points = new LinePoint[Globals.Config.saved.TextureCurveSampleCount];
-        Points = new LinePoint[sampleCount];
-        LinePointStep = 1.0f / (float)(Points.Length - 1);
+    public UIRect GetBoundingBox()
+    {
+        float margin = 0.5f * Globals.Config.saved.LineThickness; // extra room for the texture
+        float minX = Math.Min(ScreenPos.X, Math.Min(MidScreenPos.X, TargetScreenPos.X)) - margin;
+        float minY = Math.Min(ScreenPos.Y, Math.Min(MidScreenPos.Y, TargetScreenPos.Y)) - margin;
+        float maxX = Math.Max(ScreenPos.X, Math.Max(MidScreenPos.X, TargetScreenPos.X)) + margin;
+        float maxY = Math.Max(ScreenPos.Y, Math.Max(MidScreenPos.Y, TargetScreenPos.Y)) + margin;
+
+        Vector2 position = new Vector2(minX, minY);
+        Vector2 size = new Vector2(maxX - minX, maxY - minY);
+
+        return new UIRect(position, size);
     }
 
-    private Vector3 EvaluateCubic(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t) {
-        if (t == 0) {
-            return p0;
+    private void InitializeLinePoints(int sampleCount = 3) {
+        if (Points.Length != Globals.Config.saved.TextureCurveSampleCountMax) {
+            Points = new LinePoint[Globals.Config.saved.TextureCurveSampleCountMax];
         }
 
-        if (t == 1) {
-            return p3;
-        }
-
-        float t2 = t * t;
-        float t3 = t2 * t;
-        float mt = 1 - t;
-        float mt2 = mt * mt;
-        float mt3 = mt2 * mt;
-
-        Vector3 point =
-            mt3 * p0 +
-            3 * mt2 * t * p1 +
-            3 * mt * t2 * p2 +
-            t3 * p3;
-        return point;
-    }
-
-    private Vector3 EvaluateQuadratic(Vector3 p0, Vector3 p1, Vector3 p2, float t) {
-        float mt = 1 - t;
-
-        if (t == 0) {
-            return p0;
-        }
-
-        if (t == 1) {
-            return p2;
-        }
-
-        Vector3 point = mt * mt * p0
-            + 2 * mt * t * p1
-            + t * t * p2;
-        return point;
+        SampleCount = sampleCount;
+        LinePointStep = 1.0f / (float)(SampleCount - 1);
     }
 
     private void DrawSolidLine() {
@@ -154,7 +134,7 @@ internal unsafe class TargetLine {
         float outlineThickness = Globals.Config.saved.OutlineThickness;
         float lineThickness = Globals.Config.saved.LineThickness;
 
-        if (UseQuad) {
+        if (LineSettings.LineColor.UseQuad) {
             if (outlineThickness > 0) {
                 drawlist.AddBezierQuadratic(ScreenPos, MidScreenPos, TargetScreenPos, OutlineColor.raw, outlineThickness);
             }
@@ -172,26 +152,83 @@ internal unsafe class TargetLine {
         }
     }
 
-    private unsafe void DrawFancyLine() {
-        ImDrawListPtr drawlist = ImGui.GetWindowDrawList();
-        int sampleCount = Points.Length;
+    private unsafe RGBA[] DrawFancyLine_LineColor(int index) {
+        RGBA[] linecolor = new RGBA[2];
+        linecolor[0].raw = LineColor.raw;
+        linecolor[1].raw = OutlineColor.raw;
 
-        float currentTime = (float)Globals.Runtime;
-        float pulsatingSpeed = Globals.Config.saved.WaveFrequencyScalar;
-        float max = LineColor.a;
-        float min = max * 0.5f;
-        float pulsatingAmplitude = (max - min) * (1.0f - Globals.Config.saved.WaveAmplitudeOffset);
+        if (Globals.Config.saved.PulsingEffect) {
+            float p = index * LinePointStep;
+            float max = LineColor.a;
+            float min = max * 0.5f;
+            float pulsatingAlpha = MathF.Sin(-((float)Globals.Runtime) * Globals.Config.saved.WaveFrequencyScalar + (p * MathF.PI) + HPI);
+            float pulsatingAmplitude = (max - min) * (1.0f - Globals.Config.saved.WaveAmplitudeOffset);
+            pulsatingAlpha = Math.Clamp(pulsatingAlpha * pulsatingAmplitude + min, min, max);
+            linecolor[0].a = (byte)pulsatingAlpha;
+            linecolor[1].a = (byte)pulsatingAlpha;
+        }
 
-        bool shouldCalculatePulsatingEffect = Globals.Config.saved.PulsingEffect;
-        bool shouldFadeToEnd = Globals.Config.saved.FadeToEnd;
-        float lineThickness = Globals.Config.saved.LineThickness * 2.0f;
-        float outlineThickness = Globals.Config.saved.OutlineThickness * 2.0f;
+        if (Globals.Config.saved.FadeToEnd) {
+            float alphaFade = MathUtils.Lerpf((float)linecolor[1].a,
+                (float)(linecolor[1].a * Globals.Config.saved.FadeToEndScalar),
+                (float)index * LinePointStep);
 
+            linecolor[1].a = (byte)alphaFade;
+        }
+
+        return linecolor;
+    }
+
+    private unsafe void DrawFancyLine_Caps(ImDrawListPtr drawlist, float lineThickness, bool firstSegmentOccluded, bool lastSegmentOccluded) {
+        Vector2 start_dir = Vector2.Normalize(Points[1].Pos - Points[0].Pos);
+        Vector2 end_dir = Vector2.Normalize(Points[SampleCount - 1].Pos - Points[SampleCount - 2].Pos);
+        Vector2 start_perp = new Vector2(-start_dir.Y, start_dir.X) * lineThickness;
+        Vector2 end_perp = new Vector2(-end_dir.Y, end_dir.X) * lineThickness;
+
+        Vector2 start_p1 = Points[0].Pos - start_dir;
+        Vector2 start_p2 = Points[0].Pos + start_dir;
+
+        start_p1.X -= lineThickness * 0.45f;
+        start_p1.Y -= lineThickness * 0.45f;
+        start_p2.X += lineThickness * 0.45f;
+        start_p2.Y += lineThickness * 0.45f;
+
+        Vector2 end_p1 = Points[SampleCount - 1].Pos - end_dir;
+        Vector2 end_p2 = Points[SampleCount - 1].Pos + end_dir;
+
+        end_p1.X -= lineThickness * 0.45f;
+        end_p1.Y -= lineThickness * 0.45f;
+        end_p2.X += lineThickness * 0.45f;
+        end_p2.Y += lineThickness * 0.45f;
+
+        RGBA* linecolor_end = stackalloc RGBA[1];
+        linecolor_end->raw = LineColor.raw;
+        if (Globals.Config.saved.FadeToEnd) {
+            linecolor_end->a = (byte)(linecolor_end->a * Globals.Config.saved.FadeToEndScalar);
+        }
+
+        if (DrawBeginCap && !firstSegmentOccluded) {
+            var wrap = Globals.EdgeTexture.GetWrapOrEmpty();
+            if (wrap != null) {
+                drawlist.AddImage(wrap.ImGuiHandle, start_p1, start_p2, uv1, uv3, LineColor.raw);
+            }
+        }
+
+        if (DrawEndCap && !lastSegmentOccluded) {
+            var wrap = Globals.EdgeTexture.GetWrapOrEmpty();
+            if (wrap != null) {
+                drawlist.AddImage(wrap.ImGuiHandle, end_p1, end_p2, uv1, uv3, linecolor_end->raw);
+            }
+        }
+    }
+
+    private unsafe void DrawFancyLine_Segments(ImDrawListPtr drawlist, float lineThickness, float outlineThickness, out bool firstSegmentOccluded, out bool lastSegmentOccluded) {
         bool segmentOccluded;
-        bool firstSegmentOccluded = false;
-        bool lastSegmentOccluded = false;
 
-        for (int index = 0; index < sampleCount - 1; index++) {
+        firstSegmentOccluded = false;
+        lastSegmentOccluded = false;
+
+        for (int index = 0; index < SampleCount - 1; index++) {
             LinePoint point = Points[index];
             LinePoint nextpoint = Points[index + 1];
             if (!point.Visible && !nextpoint.Visible) {
@@ -203,7 +240,7 @@ internal unsafe class TargetLine {
                 if (index == 0) {
                     firstSegmentOccluded = true;
                 }
-                else if (index == sampleCount - 2) {
+                else if (index == SampleCount - 2) {
                     lastSegmentOccluded = true;
                 }
                 continue;
@@ -226,135 +263,84 @@ internal unsafe class TargetLine {
             Vector2 p1_perp_invo = p1 - perpo;
             Vector2 p2_perp_invo = p2 - perpo;
 
-            RGBA* linecolor_index = stackalloc RGBA[1];
-            RGBA* outlinecolor_index = stackalloc RGBA[1];
+            RGBA[] linecolor = DrawFancyLine_LineColor(index);
 
-            linecolor_index->raw = LineColor.raw;
-            outlinecolor_index->raw = OutlineColor.raw;
-
-            if (shouldCalculatePulsatingEffect) {
-                float p = index * LinePointStep;
-                float pulsatingAlpha = MathF.Sin(-currentTime * pulsatingSpeed + (p * MathF.PI) + HPI);
-                pulsatingAlpha = Math.Clamp(pulsatingAlpha * pulsatingAmplitude + min, min, max);
-                linecolor_index->a = (byte)pulsatingAlpha;
-                outlinecolor_index->a = (byte)pulsatingAlpha;
+            segmentOccluded = linecolor[0].a == 0 || lineThickness == 0;
+            if (index == 0)
+            {
+                firstSegmentOccluded = segmentOccluded;
             }
-
-            if (shouldFadeToEnd) {
-                float alphaFade = MathUtils.Lerpf((float)outlinecolor_index->a,
-                    (float)(outlinecolor_index->a * Globals.Config.saved.FadeToEndScalar),
-                    (float)index * LinePointStep);
-
-                outlinecolor_index->a = (byte)alphaFade;
-            }
-
-            segmentOccluded = linecolor_index->a == 0 || lineThickness == 0;
-            if (Globals.Config.saved.UIOcclusion && !segmentOccluded) {
-                segmentOccluded = UICollision.OcclusionCheck(p1_perp_inv, p2_perp_inv, p2_perp, p1_perp);
-                if (index == 0) {
-                    firstSegmentOccluded = segmentOccluded;
-                }
-                if (index == sampleCount - 2) {
-                    lastSegmentOccluded = segmentOccluded;
-                }
+            if (index == SampleCount - 2)
+            {
+                lastSegmentOccluded = segmentOccluded;
             }
 
             if (!segmentOccluded) {
                 var wrapline = Globals.LineTexture.GetWrapOrEmpty();
-                drawlist.AddImageQuad(wrapline.ImGuiHandle, p1_perp_inv, p2_perp_inv, p2_perp, p1_perp, uv1, uv2, uv3, uv4, linecolor_index->raw);
+                drawlist.AddImageQuad(wrapline.ImGuiHandle, p1_perp_inv, p2_perp_inv, p2_perp, p1_perp, uv1, uv2, uv3, uv4, linecolor[0].raw);
 
-                if (outlinecolor_index->a != 0 && outlineThickness != 0) {
+                if (linecolor[1].a != 0 && outlineThickness != 0) {
                     var wrapoutline = Globals.OutlineTexture.GetWrapOrEmpty();
-                    drawlist.AddImageQuad(wrapoutline.ImGuiHandle, p1_perp_invo, p2_perp_invo, p2_perpo, p1_perpo, uv1, uv2, uv3, uv4, outlinecolor_index->raw);
+                    drawlist.AddImageQuad(wrapoutline.ImGuiHandle, p1_perp_invo, p2_perp_invo, p2_perpo, p1_perpo, uv1, uv2, uv3, uv4, linecolor[1].raw);
                 }
             }
         }
+    }
 
-        Vector2 start_dir = Vector2.Normalize(Points[1].Pos - Points[0].Pos);
-        Vector2 end_dir = Vector2.Normalize(Points[sampleCount - 1].Pos - Points[sampleCount - 2].Pos);
-        Vector2 start_perp = new Vector2(-start_dir.Y, start_dir.X) * lineThickness;
-        Vector2 end_perp = new Vector2(-end_dir.Y, end_dir.X) * lineThickness;
+    private unsafe void DrawFancyLine() {
+        ImDrawListPtr drawlist = ImGui.GetWindowDrawList();
 
-        Vector2 start_p1 = Points[0].Pos - start_dir;
-        Vector2 start_p2 = Points[0].Pos + start_dir;
+        float lineThickness = Globals.Config.saved.LineThickness * 2.0f;
+        float outlineThickness = Globals.Config.saved.OutlineThickness * 2.0f;
 
-        start_p1.X -= lineThickness * 0.45f;
-        start_p1.Y -= lineThickness * 0.45f;
-        start_p2.X += lineThickness * 0.45f;
-        start_p2.Y += lineThickness * 0.45f;
-
-        Vector2 end_p1 = Points[sampleCount - 1].Pos - end_dir;
-        Vector2 end_p2 = Points[sampleCount - 1].Pos + end_dir;
-
-        end_p1.X -= lineThickness * 0.45f;
-        end_p1.Y -= lineThickness * 0.45f;
-        end_p2.X += lineThickness * 0.45f;
-        end_p2.Y += lineThickness * 0.45f;
-
-        RGBA* linecolor_end = stackalloc RGBA[1];
-        linecolor_end->raw = LineColor.raw;
-        if (shouldFadeToEnd) {
-            linecolor_end->a = (byte)(linecolor_end->a * Globals.Config.saved.FadeToEndScalar);
-        }
-
-        if (DrawBeginCap && !firstSegmentOccluded) {
-            var wrap = Globals.EdgeTexture.GetWrapOrEmpty();
-            if (wrap != null) {
-                drawlist.AddImage(wrap.ImGuiHandle, start_p1, start_p2, uv1, uv3, LineColor.raw);
-            }
-        }
-
-        if (DrawEndCap && !lastSegmentOccluded) {
-            var wrap = Globals.EdgeTexture.GetWrapOrEmpty();
-            if (wrap != null) {
-                drawlist.AddImage(wrap.ImGuiHandle, end_p1, end_p2, uv1, uv3, linecolor_end->raw);
-            }
-        }
+        bool firstSegmentOccluded;
+        bool lastSegmentOccluded;
+        DrawFancyLine_Segments(drawlist, lineThickness, outlineThickness, out firstSegmentOccluded, out lastSegmentOccluded);
+        DrawFancyLine_Caps(drawlist, lineThickness, firstSegmentOccluded, lastSegmentOccluded);
     }
 
     private void UpdateMidPosition() {
         MidPosition = (Position + TargetPosition) * 0.5f;
 
-        if (Self->GetIsPlayerCharacter()) {
+        if (Self.GetIsPlayerCharacter()) {
             MidPosition.Y += Globals.Config.saved.PlayerHeightBump;
         }
-        else if (Self->GetIsBattleChara()) {
+        else if (Self.GetIsBattleChara()) {
             MidPosition.Y += Globals.Config.saved.EnemyHeightBump;
         }
 
-        float height_fix = 0.75f;
-        if (UseQuad) {
-            height_fix = 1.0f;
+        float heightFix = 0.75f;
+        if (LineSettings.LineColor.UseQuad) {
+            heightFix = 1.0f;
         }
 
         if (State == LineState.Dying) {
             float alpha = StateTime / Globals.Config.saved.NoTargetFadeTime;
-            height_fix *= 1.0f - alpha;
+            heightFix *= 1.0f - alpha;
         }
         else if (State == LineState.NewTarget) {
             float alpha = StateTime / Globals.Config.saved.NewTargetEaseTime;
-            height_fix *= alpha;
+            heightFix *= alpha;
         }
 
-        MidPosition.Y += (MidHeight * Globals.Config.saved.ArcHeightScalar) * height_fix;
+        MidPosition.Y += (MidHeight * Globals.Config.saved.ArcHeightScalar) * heightFix;
     }
 
     private unsafe Vector3 GetTransitionPosition(Vector3 startPosition, Vector3 endPosition, float transition, bool isFPP) {
-        if (transition == 0) {
-            FPPTransition.Stop();
+        if (transition == 0.0f) {
             FPPTransition.Reset();
             if (isFPP) {
                 return endPosition;
             }
-        } else {
+        }
+        else {
             if (!FPPTransition.IsRunning || MathF.Sign(transition) != MathF.Sign(FPPLastTransition)) {
                 FPPTransition.Restart();
             }
             FPPLastTransition = transition;
         }
     
-        float t = FPPTransition.ElapsedMilliseconds / 1000.0f / 0.49f;
-
+        float t = (FPPTransition.ElapsedMilliseconds / 1000.0f) / 0.49f;
         if (transition < 0) {
             t *= 0.5f;
         }
@@ -386,11 +372,11 @@ internal unsafe class TargetLine {
     }
     
     public unsafe Vector3 GetSourcePosition(out bool fpp) {
-        return CalculatePosition(Self->Position, Self->GetCursorHeight() - 0.2f, Self->EntityId == Service.ClientState.LocalPlayer.EntityId, out fpp);
+        return CalculatePosition(Self.Position, Self.GetHeadHeight(), Self.EntityId == Service.ClientState.LocalPlayer.EntityId, out fpp);
     }
     
     public unsafe Vector3 GetTargetPosition(out bool fpp) {
-        return CalculatePosition(Self->TargetObject.Position, Self->TargetObject.GetCursorHeight() - 0.2f, Self->TargetObject.EntityId == Service.ClientState.LocalPlayer.EntityId, out fpp);
+        return CalculatePosition(Self.TargetObject.Position, Self.TargetObject.GetHeadHeight(), Self.TargetObject.EntityId == Service.ClientState.LocalPlayer.EntityId, out fpp);
     }
 
 
@@ -402,8 +388,8 @@ internal unsafe class TargetLine {
         Vector3 start = _source;
         Vector3 end = _target;
 
-        float start_height = Self->GetCursorHeight();
-        float end_height = Self->TargetObject.GetCursorHeight();
+        float start_height = Self.GetCursorHeight();
+        float end_height = Self.TargetObject.GetCursorHeight();
         float mid_height = (start_height + end_height) * 0.5f;
 
         float start_height_scaled = (fpp0 ? 0 : start_height) * Globals.Config.saved.HeightScale;
@@ -419,7 +405,7 @@ internal unsafe class TargetLine {
 
         if (alpha >= 1) {
             State = LineState.Idle;
-            LastTargetId = Self->TargetObject.EntityId;
+            LastTargetId = Self.TargetObject.EntityId;
         }
 
         Position = start;
@@ -450,7 +436,7 @@ internal unsafe class TargetLine {
         Vector3 start = _source;
         Vector3 end = LastTargetPosition;
 
-        float start_height = Self->GetCursorHeight();
+        float start_height = Self.GetCursorHeight();
         float end_height = LastTargetHeight;
         float mid_height = (start_height + end_height) * 0.5f;
 
@@ -465,7 +451,7 @@ internal unsafe class TargetLine {
         end.Y += end_height_scaled;
 
         if (alpha >= 1) {
-            ShouldDelete = true;
+            Sleeping = true;
         }
 
         Position = start;
@@ -482,8 +468,8 @@ internal unsafe class TargetLine {
         Vector3 start = LastTargetPosition;
         Vector3 end = _target;
 
-        float start_height = Self->GetCursorHeight();
-        float end_height = Self->TargetObject.GetCursorHeight();
+        float start_height = Self.GetCursorHeight();
+        float end_height = Self.TargetObject.GetCursorHeight();
         float mid_height = (start_height + end_height) * 0.5f;
 
         float start_height_scaled = (fpp0 ? 0 : start_height) * Globals.Config.saved.HeightScale;
@@ -496,7 +482,7 @@ internal unsafe class TargetLine {
 
         if (alpha >= 1) {
             State = LineState.Idle;
-            LastTargetId = Self->TargetObject.EntityId;
+            LastTargetId = Self.TargetObject.EntityId;
         }
 
         Position = _source;
@@ -513,8 +499,8 @@ internal unsafe class TargetLine {
         Vector3 _source = GetSourcePosition(out fpp0);
         Vector3 _target = GetTargetPosition(out fpp1);
 
-        float start_height = Self->GetCursorHeight();
-        float end_height = Self->TargetObject.GetCursorHeight();
+        float start_height = Self.GetCursorHeight();
+        float end_height = Self.TargetObject.GetCursorHeight();
         float mid_height = (start_height + end_height) * 0.5f;
 
         float start_height_scaled = (fpp0 ? 0 : start_height) * Globals.Config.saved.HeightScale;
@@ -536,40 +522,42 @@ internal unsafe class TargetLine {
     private unsafe void UpdateState() {
         bool new_target = false;
 
-        if (HasTarget != HadTarget) {
-            if (HasTarget) {
-                if (State == LineState.Dying) {
-                    LastTargetPosition = LastTargetPosition2;
+        if (State != LineState.Dying2) {
+            if (HasTarget != HadTarget) {
+                if (HasTarget) {
+                    if (State == LineState.Dying) {
+                        LastTargetPosition = LastTargetPosition2;
+                    }
+
+                    LastTargetId = Self.TargetObject.EntityId;
+                    State = LineState.NewTarget;
+                    StateTime = 0;
                 }
+                else {
+                    if (State == LineState.Switching || State == LineState.NewTarget) {
+                        LastTargetPosition = LastTargetPosition2;
+                    }
 
-                LastTargetId = Self->TargetObject.EntityId;
-                State = LineState.NewTarget;
-                StateTime = 0;
-            }
-            else {
-                if (State == LineState.Switching || State == LineState.NewTarget) {
-                    LastTargetPosition = LastTargetPosition2;
+                    State = LineState.Dying;
+                    StateTime = 0;
                 }
-
-                State = LineState.Dying;
-                StateTime = 0;
-            }
-        }
-
-        if (HasTarget && HadTarget) {
-            if (Self->TargetObject.EntityId != LastTargetId) {
-                LastTargetId = Self->TargetObject.EntityId;
-                new_target = true;
             }
 
-            if (new_target) {
-                if (State == LineState.Switching) {
-                    LastTargetPosition = LastTargetPosition2;
+            if (HasTarget && HadTarget) {
+                if (Self.TargetObject.EntityId != LastTargetId) {
+                    LastTargetId = Self.TargetObject.EntityId;
+                    new_target = true;
                 }
 
-                State = LineState.Switching;
-                LastMidHeight = MidHeight;
-                StateTime = 0;
+                if (new_target) {
+                    if (State == LineState.Switching) {
+                        LastTargetPosition = LastTargetPosition2;
+                    }
+
+                    State = LineState.Switching;
+                    LastMidHeight = MidHeight;
+                    StateTime = 0;
+                }
             }
         }
 
@@ -578,6 +566,7 @@ internal unsafe class TargetLine {
                 UpdateStateNewTarget();
                 break;
             case LineState.Dying:
+            case LineState.Dying2:
                 UpdateStateDying();
                 break;
             case LineState.Switching:
@@ -596,13 +585,15 @@ internal unsafe class TargetLine {
 
     private void UpdateColors() {
         float alpha = 1.0f;
+        RGBA tempLineColor = Globals.Config.saved.LineColor.Color;
+        RGBA tempOutlineColor = tempLineColor;
 
         if (Globals.Config.saved.LineColor.Visible) {
             LineColor.raw = Globals.Config.saved.LineColor.Color.raw;
             OutlineColor.raw = Globals.Config.saved.LineColor.OutlineColor.raw;
         }
 
-        if (Self->TargetObject == null) {
+        if (Self.TargetObject == null) {
             LineColor.raw = LastLineColor.raw;
             OutlineColor.raw = LastOutlineColor.raw;
         }
@@ -610,9 +601,9 @@ internal unsafe class TargetLine {
             int highestPriority = -1;
             foreach (TargetSettingsPair settings in Globals.Config.LineColors) {
                 int priority = settings.GetPairPriority();
-                if (priority > highestPriority) {
-                    TargetSettings SelfSettings = Self->GetTargetSettings();
-                    TargetSettings TargSettings = Self->TargetObject.GetTargetSettings();
+                if (priority > highestPriority && settings != null) {
+                    TargetSettings SelfSettings = Self.GetTargetSettings();
+                    TargetSettings TargSettings = Self.TargetObject.GetTargetSettings();
 
                     bool should_copy = CompareTargetSettings(ref settings.From, ref SelfSettings);
                     if (should_copy) {
@@ -620,10 +611,9 @@ internal unsafe class TargetLine {
                     }
                     if (should_copy) {
                         highestPriority = priority;
+                        LineSettings = settings;
                         tempLineColor.raw = settings.LineColor.Color.raw;
                         tempOutlineColor.raw = settings.LineColor.OutlineColor.raw;
-                        UseQuad = settings.LineColor.UseQuad;
-                        Visible = settings.LineColor.Visible;
                     }
                 }
             }
@@ -646,17 +636,17 @@ internal unsafe class TargetLine {
         bool occlusion = Globals.Config.saved.OcclusionCulling;
 
 #if (!PROBABLY_BAD)
-        if (Self->GetIsBattleNPC()) {
+        if (Self.GetIsBattleNPC()) {
             occlusion = true;
         }
 #endif
 
-        bool vis0 = Self->IsVisible(occlusion);
+        bool vis0 = Self.IsVisible(occlusion);
         bool vis1 = false;
         bool vis2 = false;
 
         if (HasTarget) {
-            vis1 = Self->TargetObject.IsVisible(occlusion);
+            vis1 = Self.TargetObject.IsVisible(occlusion);
         }
         else {
             vis1 = Globals.IsVisible(TargetPosition, occlusion);
@@ -669,11 +659,11 @@ internal unsafe class TargetLine {
         DrawMid = Service.GameGui.WorldToScreen(MidPosition, out MidScreenPos);
 
         if (Globals.Config.saved.SolidColor == false) {
-            for (int index = 0; index < Points.Length; index++) {
+            for (int index = 0; index < SampleCount; index++) {
                 float t = index * LinePointStep;
-                Vector3 point = UseQuad
-                    ? EvaluateQuadratic(Position, MidPosition, TargetPosition, t)
-                    : EvaluateCubic(Position, MidPosition, MidPosition, TargetPosition, t);
+                Vector3 point = LineSettings.LineColor.UseQuad
+                    ? MathUtils.EvaluateQuadratic(Position, MidPosition, TargetPosition, t)
+                    : MathUtils.EvaluateCubic(Position, MidPosition, MidPosition, TargetPosition, t);
 
                 bool vis = Service.GameGui.WorldToScreen(point, out Vector2 screenPoint);
                 Points[index].Pos = screenPoint;
@@ -704,83 +694,8 @@ internal unsafe class TargetLine {
         return true;
     }
 
-    private unsafe void TrollCheaters()
-    {
-        var group = GroupManager.Instance();
-        var chara = CharacterManager.Instance();
-        uint partyMemberNewTarget = 0xE0000000;
-
-        // friendlies target any existing targeted drk, otherwise any tank
-        for (int index = 0; index < 24; index++)
-        {
-            var partymember = group->MainGroup.GetAllianceMemberByIndex(index);
-            if (partymember != null)
-            {
-                var me = chara->LookupBattleCharaByEntityId(partymember->EntityId);
-                if (me != null)
-                {
-                    var target = chara->LookupBattleCharaByEntityId((uint)me->Character.TargetId);
-                    if (target != null)
-                    {
-                        if (target->Character.GameObject.ObjectKind == FFXIVClientStructs.FFXIV.Client.Game.Object.ObjectKind.Pc)
-                        {
-                            var _target = (Character*)target;
-                            if (_target->CharacterData.ClassJob == (byte)ClassJob.DarkKnight)
-                            {
-                                partyMemberNewTarget = partymember->EntityId;
-                                break;
-                            }
-
-                            if (_target->CharacterData.ClassJob == (byte)ClassJob.Gunbreaker || _target->CharacterData.ClassJob == (byte)ClassJob.Paladin || _target->CharacterData.ClassJob == (byte)ClassJob.Warrior)
-                            {
-                                partyMemberNewTarget = partymember->EntityId;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (Globals.HandlePvPTime > 150 && Self->GetIsPlayerCharacter())
-        {
-            var player = (Character*)Self->Address;
-            if (player->GameObject.EntityId == Service.ClientState.LocalPlayer?.EntityId)
-            {
-                return;
-            }
-            
-            if (player->IsAllianceMember || player->IsPartyMember)
-            {
-                if (partyMemberNewTarget != 0xE0000000)
-                {
-                    player->TargetId = partyMemberNewTarget;
-                }
-            }
-            else if (player->GameObject.ObjectKind == FFXIVClientStructs.FFXIV.Client.Game.Object.ObjectKind.Pc)
-            {
-                // probably a baddie, target the player character
-                if (Service.ClientState.LocalPlayer != null)
-                {
-                    player->TargetId = Service.ClientState.LocalPlayer.EntityId;
-                }
-            }
-        }
-    }
-
-    public unsafe void Draw() {
-        int sampleCountTarget = 1;
-
-        if (Self == null)
-        {
-            ShouldDelete = true;
-            return;
-        }
-
-        if (Service.ClientState.IsPvP && Globals.HandlePvP)
-        {
-            TrollCheaters();
-        }
-
+    private void UpdateSampleCount() {
+        int sampleCountTarget = 3;
         if (Globals.Config.saved.SolidColor == false) {
             if (Globals.Config.saved.DynamicSampleCount) {
                 int min = Globals.Config.saved.TextureCurveSampleCountMin;
@@ -791,10 +706,11 @@ internal unsafe class TargetLine {
                 }
 
                 // further reduce quality as lines become more numerous
-                max = (int)MathF.Min(MathF.Max(min + 3, max), max / MathF.Floor(Globals.TargetLineDict.Count / 17));
+                var r = Math.Max(TargetLineManager.RenderedLineCount, 1);
+                max = Math.Max(min + 3, max);
+                max = Math.Min(max, (7 * max) / r);
 
-                sampleCountTarget = min + ((int)MathF.Floor(1.5f + (TargetPosition - Position).Length())) * 2;
-
+                sampleCountTarget = min + ((int)Math.Floor(1.5f + (TargetPosition - Position).Length())) * 2;
                 if (sampleCountTarget > max) {
                     sampleCountTarget = max;
                 }
@@ -805,46 +721,123 @@ internal unsafe class TargetLine {
                 if (Globals.IsInFirstPerson()) {
                     sampleCountTarget *= 2;
                 }
-
-                sampleCountTarget -= (~sampleCountTarget & 1); // make it odd so there is a peak
             }
             else {
                 sampleCountTarget = Globals.Config.saved.TextureCurveSampleCount;
             }
 
-            
-
-            if (Points.Length != sampleCountTarget) {
-                if (sampleCountTarget < Globals.Config.saved.TextureCurveSampleCountMin)
-                {
-                    sampleCountTarget = Globals.Config.saved.TextureCurveSampleCountMin;
-                }
+            sampleCountTarget = Math.Min(Math.Max(Globals.Config.saved.TextureCurveSampleCountMin, sampleCountTarget), Globals.Config.saved.TextureCurveSampleCountMax);
+            sampleCountTarget -= (~sampleCountTarget & 1); // make it odd so there is a peak
+            if (SampleCount != sampleCountTarget) {
                 InitializeLinePoints(sampleCountTarget);
             }
-
-            if (Globals.Config.saved.DebugDynamicSampleCount) {
-                ImDrawListPtr drawlist = ImGui.GetWindowDrawList();
-                drawlist.AddText(ScreenPos, 0xFF000000, sampleCountTarget.ToString());
-                drawlist.AddText(MidScreenPos, 0xFF00FFFF, sampleCountTarget.ToString());
-                drawlist.AddText(TargetScreenPos, 0xFFFFFFFF, sampleCountTarget.ToString());
-            }
         }
+    }
 
-        HasTarget = Self->TargetObject != null;
-
-        UpdateState();
-        UpdateColors();
-
-        if (!UpdateVisibility()) {
+    public unsafe void Update() {
+        if (Self == null || Self.IsValid() == false) {
+            Sleeping = true;
             return;
         }
 
-        if (Visible) {
-            if (Globals.Config.saved.SolidColor) {
-                DrawSolidLine();
+        var csObj = Self.GetClientStructGameObject();
+        if (csObj == null) {
+            return;
+        }
+
+        if (((csObj->RenderFlags & 0x800) != 0 || Self.IsDead) && State != LineState.Dying2) {
+            State = LineState.Dying2;
+            StateTime = 0;
+        }
+
+        HasTarget = Self.TargetObject != null;
+
+        UpdateState();
+        UpdateColors();
+        UpdateSampleCount();
+
+        if (Service.ClientState.IsPvP && Globals.HandlePvP) {
+            TrollCheaters();
+        }
+    }
+
+    public unsafe bool Draw() {
+        if (Sleeping) {
+            return false;
+        }
+
+        if (!UpdateVisibility()) {
+            return false;
+        }
+        if (Globals.Config.saved.SolidColor) {
+            DrawSolidLine();
+        }
+        else {
+            DrawFancyLine();
+        }
+
+        if (Globals.Config.saved.DebugDynamicSampleCount) {
+            ImDrawListPtr drawlist = ImGui.GetWindowDrawList();
+            var sampleCountString = SampleCount.ToString();
+            var pos2 = ScreenPos;
+            var pos3 = ScreenPos;
+            pos2.Y += 32;
+            pos3.Y += 64;
+            drawlist.AddText(ScreenPos, 0xFF000000, sampleCountString);
+            drawlist.AddText(MidScreenPos, 0xFF00FFFF, sampleCountString);
+            drawlist.AddText(TargetScreenPos, 0xFFFFFFFF, sampleCountString);
+            drawlist.AddText(pos2, 0xFFFFFFFF, $"EntityId: {Self.EntityId:X}, GameObjectId: {Self.GameObjectId:X}; State: {State}");
+            drawlist.AddText(pos3, 0xFFFFFFFF, $"Dead? {Self.IsDead}; Render Flags: {Self.GetClientStructGameObject()->RenderFlags:X}");
+        }
+
+        return true;
+    }
+
+    private unsafe void TrollCheaters() {
+        var group = GroupManager.Instance();
+        var chara = CharacterManager.Instance();
+        uint partyMemberNewTarget = 0xE0000000;
+
+        // friendlies target any existing targeted drk, otherwise any tank
+        for (int index = 0; index < 24; index++) {
+            var partymember = group->MainGroup.GetAllianceMemberByIndex(index);
+            if (partymember != null) {
+                var me = chara->LookupBattleCharaByEntityId(partymember->EntityId);
+                if (me != null) {
+                    var target = chara->LookupBattleCharaByEntityId((uint)me->Character.TargetId);
+                    if (target != null) {
+                        if (target->Character.GameObject.ObjectKind == FFXIVClientStructs.FFXIV.Client.Game.Object.ObjectKind.Pc) {
+                            var _target = (Character*)target;
+                            if (_target->CharacterData.ClassJob == (byte)ClassJob.DarkKnight) {
+                                partyMemberNewTarget = partymember->EntityId;
+                                break;
+                            }
+
+                            if (_target->CharacterData.ClassJob == (byte)ClassJob.Gunbreaker || _target->CharacterData.ClassJob == (byte)ClassJob.Paladin || _target->CharacterData.ClassJob == (byte)ClassJob.Warrior) {
+                                partyMemberNewTarget = partymember->EntityId;
+                            }
+                        }
+                    }
+                }
             }
-            else {
-                DrawFancyLine();
+        }
+
+        if (Globals.HandlePvPTime > 150 && Self.GetIsPlayerCharacter()) {
+            var player = (Character*)Self.Address;
+            if (player->GameObject.EntityId == Service.ClientState.LocalPlayer?.EntityId) {
+                return;
+            }
+            
+            if (player->IsAllianceMember || player->IsPartyMember) {
+                if (partyMemberNewTarget != 0xE0000000) {
+                    player->TargetId = partyMemberNewTarget;
+                }
+            }
+            else if (player->GameObject.ObjectKind == FFXIVClientStructs.FFXIV.Client.Game.Object.ObjectKind.Pc) {
+                // probably a baddie, target the player character
+                if (Service.ClientState.LocalPlayer != null) {
+                    player->TargetId = Service.ClientState.LocalPlayer.EntityId;
+                }
             }
         }
     }

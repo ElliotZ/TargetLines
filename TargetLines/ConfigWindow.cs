@@ -409,7 +409,10 @@ internal class ConfigWindow : WindowWrapper {
                 {
                     Globals.Config.saved.LinePartyMode = (LinePartyMode)selected;
                     should_save = true;
-                    Globals.TargetLineDict.Clear();
+                }
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip("PartyOnly = Only draw lines to/from the party\nPartyOnlyInAlliance = Only draw lines to/from the party when in an active alliance\nAllianceOnly = Only draw lines to/from the alliance");
                 }
 
                 if (!Globals.Config.saved.DynamicSampleCount) {
@@ -547,10 +550,17 @@ internal class ConfigWindow : WindowWrapper {
 
         should_save |= ImGui.Checkbox("Debug Dynamic Sample Count", ref Globals.Config.saved.DebugDynamicSampleCount);
         should_save |= ImGui.Checkbox("Debug UI Collision", ref Globals.Config.saved.DebugUICollision);
+        should_save |= ImGui.Checkbox("Draw Initial UI Collision Rects (0)", ref Globals.Config.saved.DebugUIInitialRectList);
+        should_save |= ImGui.Checkbox("Draw Merged UI Collision Rects (1)", ref Globals.Config.saved.DebugUIMergedRectList);
+        should_save |= ImGui.Checkbox("Draw Final UI Collision Rects (2)", ref Globals.Config.saved.DebugUIFinalRectList);
+        should_save |= ImGui.Checkbox("Draw the result of clipping (drawable areas)", ref Globals.Config.saved.DebugUICollisionArea);
         should_save |= ImGui.Checkbox("Debug DX Lines", ref Globals.Config.saved.DebugDXLines);
         if (ImGui.IsItemHovered()) {
             ImGui.SetTooltip("Toggling this requires a plugin restart (I am lazy)");
         }
+
+        ImGui.TextDisabled($"Number of rendered lines: {TargetLineManager.RenderedLineCount.ToString()}");
+        ImGui.TextDisabled($"Number of processed lines: {TargetLineManager.ProcessedLineCount.ToString()}");
 
         return should_save;
     }
@@ -607,6 +617,7 @@ internal class ConfigWindow : WindowWrapper {
 
         if (should_save) {
             Globals.Config.Save();
+            TargetLineManager.InitializeTargetLines(); // reset lines
         }
     }
 }
