@@ -4,15 +4,16 @@ using Dalamud.Game.ClientState.Objects.Types;
 using System;
 using System.Numerics;
 using ImGuiNET;
-using System.Data.SqlTypes;
-using System.Drawing;
 using System.Collections.Generic;
+using FFXIVClientStructs.FFXIV.Client.Game.Control;
 
 namespace TargetLines;
 
 public static class TargetLineManager
 {
     public static TargetLine[] TargetLineArray { get; set; } = null!;
+    public static TargetLine FocusTargetLine { get; set; } = null!;
+
     public static int RenderedLineCount { get; set; } = 0;
     public static int ProcessedLineCount { get; set; } = 0;
 
@@ -26,6 +27,8 @@ public static class TargetLineManager
         for (int index = 0; index < TargetLineArray.Length; index++) {
             TargetLineArray[index] = new TargetLine();
         }
+
+        FocusTargetLine = new TargetLine(true);
 
         if (Globals.Config.saved.DebugDXLines) {
             InitializeDirectXLines();
@@ -105,6 +108,24 @@ public static class TargetLineManager
 #endif
 
         List<int> lineDrawIndices = new List<int>();
+
+        var target = TargetSystem.Instance();
+        if (target != null)
+        {
+            if (FocusTargetLine.Sleeping)
+            {
+                if (target->FocusTarget != null && target->FocusTarget->EntityId != Service.ClientState.LocalPlayer.EntityId)
+                {
+                    InitializeLine(FocusTargetLine, Service.ClientState.LocalPlayer);
+                }
+            }
+
+            if (!FocusTargetLine.Sleeping)
+            {
+                FocusTargetLine.Update();
+            }
+        }
+
         for (int index = 0; index < Service.ObjectTable.Length; index++)
         {
             var gameObject = Service.ObjectTable[index];
@@ -164,12 +185,35 @@ public static class TargetLineManager
                     UICollision.DrawDebugResultOfClipping();
                 }
             }
+
+            if (!FocusTargetLine.Sleeping)
+            {
+                UICollision.DrawWithClipping(dlist, FocusTargetLine.GetBoundingBox(), () =>
+                {
+                    if (FocusTargetLine.Draw())
+                    {
+                        renderedLineCount++;
+                    }
+                });
+                if (Globals.Config.saved.DebugUICollision)
+                {
+                    UICollision.DrawDebugResultOfClipping();
+                }
+            }
         }
         else
         {
             foreach (int index in lineDrawIndices)
             {
                 if (TargetLineArray[index].Draw())
+                {
+                    renderedLineCount++;
+                }
+            }
+
+            if (!FocusTargetLine.Sleeping)
+            {
+                if (FocusTargetLine.Draw())
                 {
                     renderedLineCount++;
                 }

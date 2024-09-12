@@ -223,8 +223,8 @@ internal class ConfigWindow : WindowWrapper {
                 }
             }
 
-            int priority = settings.GetPairPriority();
-            if (ImGui.TreeNode($"{string.Join('|', from)} -> {string.Join('|', to)} ({priority})###LineColorsEntry{guid}")) {
+            int priority = settings.GetPairPriority(settings.FocusTarget);
+            if (ImGui.TreeNode($"{string.Join('|', from)} -> {string.Join('|', to)} ({priority}{(settings.FocusTarget ? "F" : "")})###LineColorsEntry{guid}")) {
                 if (ImGui.TreeNode($"Source Filters###From{guid}")) {
                     if (DrawTargetFlagEditor(ref settings.From.Flags, $"From{guid}Flags")) {
                         should_save = true;
@@ -251,6 +251,15 @@ internal class ConfigWindow : WindowWrapper {
                 }
                 if (ImGui.IsItemHovered()) {
                     ImGui.SetTooltip("Conditions that the targeted entity must satisfy to use these settings");
+                }
+
+                if (ImGui.Checkbox("Focus Target", ref settings.FocusTarget))
+                {
+                    should_save = true;
+                }
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip("If enabled, this only applies to the targets which are focus-targeted by the player.");
                 }
 
 
@@ -536,7 +545,7 @@ internal class ConfigWindow : WindowWrapper {
 
             should_save |= ImGui.SliderFloat("No Target Animation Time Scale", ref Globals.Config.saved.DeathAnimationTimeScale, 1.0f, 4.0f);
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("A scalar for how quickly the line flattens when there is no target. 1 means the line will be flat at the end of the animation, 2 means it will be flat when 50% of the animation has completed");
+                ImGui.SetTooltip("A scalar for how quickly the line flattens when there is no target. 1 means the line will be flat at the end of the animation, 2 means it will be flat when 50 percent of the animation has completed");
             }
             ImGui.TreePop();
         }

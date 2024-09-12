@@ -109,17 +109,19 @@ public class TargetSettingsPair {
     public TargetSettings To = new TargetSettings();
     public LineColor LineColor = new LineColor();
     public int Priority = -1;
+    public bool FocusTarget = false;
     public Guid UniqueId = Guid.Empty;
-
-    public TargetSettingsPair(TargetSettings from, TargetSettings to, LineColor lineColor, int priority = -1) {
+    
+    public TargetSettingsPair(TargetSettings from, TargetSettings to, LineColor lineColor, int priority = -1, bool focus = false) {
         From = from;
         To = to;
         LineColor = lineColor;
         Priority = priority;
+        FocusTarget = focus;
         UniqueId = Guid.NewGuid();
     }
 
-    public int GetPairPriority() {
+    public int GetPairPriority(bool focus, bool sort = false) {
         int priority = Priority;
 
         if (priority == -1) {
@@ -142,6 +144,20 @@ public class TargetSettingsPair {
             }
         }
 
+        // fix any -> any
+        if (priority == -1)
+        {
+            priority = 0;
+        }
+
+        if (!sort)
+        {
+            if (focus != FocusTarget)
+            {
+                return -1;
+            }
+        }
+
         return priority;
     }
 }
@@ -158,9 +174,9 @@ public class SavedConfig {
     public float WaveFrequencyScalar = 3.0f;
     public float FadeToEndScalar = 0.2f;
     public float HeightScale = 1.0f;
-    public int TextureCurveSampleCount = 47;
-    public int TextureCurveSampleCountMin = 7;
-    public int TextureCurveSampleCountMax = 47;
+    public int TextureCurveSampleCount = 23;
+    public int TextureCurveSampleCountMin = 5;
+    public int TextureCurveSampleCountMax = 23;
     public InCombatOption OnlyInCombat = InCombatOption.None;
     public bool OnlyUnsheathed = false;
     public bool SolidColor = false;
@@ -205,7 +221,7 @@ public class Configuration : IPluginConfiguration {
     #endregion
 
     public void SortLineColors() {
-        Globals.Config.LineColors = Globals.Config.LineColors.OrderByDescending(obj => obj.GetPairPriority()).ToList();
+        Globals.Config.LineColors = Globals.Config.LineColors.OrderByDescending(obj => obj.GetPairPriority(false, false)).ToList();
     }
 
     public void InitializeDefaultLineColorsConfig() {
@@ -215,6 +231,12 @@ public class Configuration : IPluginConfiguration {
                     new TargetSettings(TargetFlags.Player),
                     new TargetSettings(TargetFlags.Player),
                     new LineColor(new RGBA(0xC0, 0x50, 0xAF, 0x4C)) // greenish
+                ),
+                // player -> party (Focus) default
+                new TargetSettingsPair(
+                    new TargetSettings(TargetFlags.Player),
+                    new TargetSettings(TargetFlags.Party),
+                    new LineColor(new RGBA(0xC0, 0xB0, 0x27, 0x9C), true, true), -1, true // greenish
                 ),
                 // player -> enemy default
                 new TargetSettingsPair(

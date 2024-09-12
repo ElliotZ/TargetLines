@@ -30,7 +30,7 @@ public static class GameObjectExtensions {
         if (obj.TargetObject == null) {
             return false;
         }
-        FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* targetobj = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)obj.TargetObject.Address;
+        CSGameObject* targetobj = (CSGameObject*)obj.TargetObject.Address;
         return targetobj->GetIsTargetable();
     }
 
