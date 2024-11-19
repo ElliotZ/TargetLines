@@ -31,7 +31,8 @@ public unsafe class TargetLine {
         Dying, // no target, fading away
         Dying2, // render flags 0x800
         Switching, // switching to different target
-        Idle // being targeted
+        Idle, // being targeted
+        Dead // prevent looping focus target line death animation
     };
 
     public IGameObject Self;
@@ -616,6 +617,16 @@ public unsafe class TargetLine {
         bool new_target = false;
 
         if (State != LineState.Dying2) {
+            if (FocusTarget && Service.ClientState.LocalPlayer?.IsDead == true) {
+                if (State == LineState.Dying || State == LineState.Dying2) {
+                    State = LineState.Dead;
+                    StateTime = 0;
+                    Sleeping = true;
+                }
+                HadTarget = HasTarget;
+                return;
+            }
+
             if (HasTarget != HadTarget) {
                 if (HasTarget) {
                     if (State == LineState.Dying) {
@@ -668,6 +679,8 @@ public unsafe class TargetLine {
                 break;
             case LineState.Idle:
                 UpdateStateIdle();
+                break;
+            case LineState.Dead:
                 break;
         }
 
