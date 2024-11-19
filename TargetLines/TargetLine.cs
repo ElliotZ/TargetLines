@@ -169,7 +169,9 @@ public unsafe class TargetLine {
             }
 
             if (Sleeping) {
-                State = LineState.NewTarget;
+                if ((FocusTarget && Service.ClientState.LocalPlayer?.IsDead != true) || !FocusTarget) {
+                    State = LineState.NewTarget;
+                }
             }
 
             Sleeping = false;
@@ -618,11 +620,6 @@ public unsafe class TargetLine {
 
         if (State != LineState.Dying2) {
             if (FocusTarget && Service.ClientState.LocalPlayer?.IsDead == true) {
-                if (State == LineState.Dying || State == LineState.Dying2) {
-                    State = LineState.Dead;
-                    StateTime = 0;
-                    Sleeping = true;
-                }
                 HadTarget = HasTarget;
                 return;
             }
