@@ -230,7 +230,7 @@ public class Configuration : IPluginConfiguration {
                 new TargetSettingsPair(
                     new TargetSettings(TargetFlags.Player),
                     new TargetSettings(TargetFlags.Player),
-                    new LineColor(new RGBA(0xC0, 0x50, 0xAF, 0x4C)) // greenish
+                    new LineColor(new RGBA(0xC0, 0x50, 0xAF, 0x4C), true, false) // greenish
                 ),
                 // player -> party (Focus) default
                 new TargetSettingsPair(
@@ -242,7 +242,7 @@ public class Configuration : IPluginConfiguration {
                 new TargetSettingsPair(
                     new TargetSettings(TargetFlags.Player),
                     new TargetSettings(TargetFlags.Enemy),
-                    new LineColor(new RGBA(0x80, 0x36, 0x43, 0xF4)) // reddish
+                    new LineColor(new RGBA(0x80, 0x36, 0x43, 0xF4), true, false) // reddish
                 ), 
                 // enemy -> player default
                 new TargetSettingsPair(

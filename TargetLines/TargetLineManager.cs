@@ -112,7 +112,7 @@ public static class TargetLineManager
         var target = TargetSystem.Instance();
         if (target != null)
         {
-            if (FocusTargetLine.Sleeping)
+            if (FocusTargetLine.Sleeping && !Service.ClientState.LocalPlayer.IsDead)
             {
                 if (target->FocusTarget != null && target->FocusTarget->EntityId != Service.ClientState.LocalPlayer.EntityId)
                 {

@@ -319,7 +319,8 @@ internal class ConfigWindow : WindowWrapper {
         if (ImGui.Button("Reset To Default")) {
             Globals.Config.saved = new SavedConfig();
             Globals.Config.InitializeDefaultLineColorsConfig();
-            should_save = true;
+            Globals.Config.Save();
+            TargetLineManager.InitializeTargetLines(); // reset lines
         }
         if (ImGui.IsItemHovered()) {
             ImGui.SetTooltip("Set all of the values to the plugin defaults. This will delete any custom entries that you have made!");
