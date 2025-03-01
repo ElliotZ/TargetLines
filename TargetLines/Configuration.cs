@@ -188,6 +188,8 @@ public class SavedConfig {
     public bool CompactFlagDisplay = false;
     public bool UIOcclusion = true;
     public bool DynamicSampleCount = true;
+    public bool UseScreenSpaceLOD = true;
+    public bool ViewAngleSampling = true;
     public LinePartyMode LinePartyMode = LinePartyMode.None;
 
     public bool DebugDynamicSampleCount = false;

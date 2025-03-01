@@ -73,7 +73,7 @@ public unsafe class TargetLine {
 
     private Stopwatch FPPTransition = new Stopwatch();
     private float FPPLastTransition = 0.0f;
-    
+
     private LinePoint[] Points = new LinePoint[3];
     private int SampleCount = 3;
     private float LinePointStep = 1.0f / (3.0f - 1);
@@ -148,28 +148,35 @@ public unsafe class TargetLine {
     }
     #endregion
 
-    public TargetLine(bool focusTarget = false) {
+    public TargetLine(bool focusTarget = false)
+    {
         FocusTarget = focusTarget;
         InitializeTargetLine();
     }
 
     #region Line Reinit
-    public unsafe void InitializeTargetLine(IGameObject obj = null) {
-        if (obj != null) {
+    public unsafe void InitializeTargetLine(IGameObject obj = null)
+    {
+        if (obj != null)
+        {
             Self = obj;
             var target = GetTargetObject();
-            if (target != null && target.IsValid()) {
+            if (target != null && target.IsValid())
+            {
                 LastTargetId = target.TargetObjectId;
                 LastTargetPosition = target.Position;
                 LastTargetPosition2 = LastTargetPosition;
             }
-            else {
+            else
+            {
                 LastTargetPosition = Self.Position;
                 LastTargetPosition2 = LastTargetPosition;
             }
 
-            if (Sleeping) {
-                if ((FocusTarget && Service.ClientState.LocalPlayer?.IsDead != true) || !FocusTarget) {
+            if (Sleeping)
+            {
+                if ((FocusTarget && Service.ClientState.LocalPlayer?.IsDead != true) || !FocusTarget)
+                {
                     State = LineState.NewTarget;
                 }
             }
@@ -188,6 +195,23 @@ public unsafe class TargetLine {
 
         SampleCount = sampleCount;
         LinePointStep = 1.0f / (float)(SampleCount - 1);
+    }
+
+    private float GetParameterValueForIndex(int index)
+    {
+        return index * LinePointStep;
+    }
+
+    private float PointToLineDistance(Vector2 point, Vector2 lineStart, Vector2 lineEnd)
+    {
+        if (lineStart == lineEnd)
+        {
+            return Vector2.Distance(point, lineStart);
+        }
+
+        Vector2 lineDir = Vector2.Normalize(lineEnd - lineStart);
+        Vector2 perpendicular = new Vector2(-lineDir.Y, lineDir.X);
+        return Math.Abs(Vector2.Dot(point - lineStart, perpendicular));
     }
     #endregion
 
@@ -237,24 +261,31 @@ public unsafe class TargetLine {
 
 
     #region Draw
-    private void DrawSolidLine() {
+    private void DrawSolidLine()
+    {
         ImDrawListPtr drawlist = ImGui.GetWindowDrawList();
         float outlineThickness = Globals.Config.saved.OutlineThickness;
         float lineThickness = Globals.Config.saved.LineThickness;
 
-        if (LineSettings.LineColor.UseQuad) {
-            if (outlineThickness > 0) {
+        if (LineSettings.LineColor.UseQuad)
+        {
+            if (outlineThickness > 0)
+            {
                 drawlist.AddBezierQuadratic(ScreenPos, MidScreenPos, TargetScreenPos, OutlineColor.raw, outlineThickness);
             }
-            if (lineThickness > 0) {
+            if (lineThickness > 0)
+            {
                 drawlist.AddBezierQuadratic(ScreenPos, MidScreenPos, TargetScreenPos, LineColor.raw, lineThickness);
             }
         }
-        else {
-            if (outlineThickness > 0) {
+        else
+        {
+            if (outlineThickness > 0)
+            {
                 drawlist.AddBezierCubic(ScreenPos, MidScreenPos, MidScreenPos, TargetScreenPos, OutlineColor.raw, outlineThickness);
             }
-            if (lineThickness > 0) {
+            if (lineThickness > 0)
+            {
                 drawlist.AddBezierCubic(ScreenPos, MidScreenPos, MidScreenPos, TargetScreenPos, LineColor.raw, lineThickness);
             }
         }
@@ -294,7 +325,8 @@ public unsafe class TargetLine {
         return lineColor;
     }
 
-    private unsafe void DrawFancyLine_Caps(ImDrawListPtr drawlist, float lineThickness, bool firstSegmentOccluded, bool lastSegmentOccluded) {
+    private unsafe void DrawFancyLine_Caps(ImDrawListPtr drawlist, float lineThickness, bool firstSegmentOccluded, bool lastSegmentOccluded)
+    {
         Vector2 start_dir = Vector2.Normalize(Points[1].Pos - Points[0].Pos);
         Vector2 end_dir = Vector2.Normalize(Points[SampleCount - 1].Pos - Points[SampleCount - 2].Pos);
         Vector2 start_perp = new Vector2(-start_dir.Y, start_dir.X) * lineThickness;
@@ -318,44 +350,55 @@ public unsafe class TargetLine {
 
         RGBA* linecolor_end = stackalloc RGBA[1];
         linecolor_end->raw = LineColor.raw;
-        if (Globals.Config.saved.FadeToEnd) {
+        if (Globals.Config.saved.FadeToEnd)
+        {
             linecolor_end->a = (byte)(linecolor_end->a * Globals.Config.saved.FadeToEndScalar);
         }
 
-        if (DrawBeginCap && !firstSegmentOccluded) {
+        if (DrawBeginCap && !firstSegmentOccluded)
+        {
             var wrap = Globals.EdgeTexture.GetWrapOrEmpty();
-            if (wrap != null) {
+            if (wrap != null)
+            {
                 drawlist.AddImage(wrap.ImGuiHandle, start_p1, start_p2, uv1, uv3, LineColor.raw);
             }
         }
 
-        if (DrawEndCap && !lastSegmentOccluded) {
+        if (DrawEndCap && !lastSegmentOccluded)
+        {
             var wrap = Globals.EdgeTexture.GetWrapOrEmpty();
-            if (wrap != null) {
+            if (wrap != null)
+            {
                 drawlist.AddImage(wrap.ImGuiHandle, end_p1, end_p2, uv1, uv3, linecolor_end->raw);
             }
         }
     }
 
-    private unsafe void DrawFancyLine_Segments(ImDrawListPtr drawlist, float lineThickness, float outlineThickness, out bool firstSegmentOccluded, out bool lastSegmentOccluded) {
+    private unsafe void DrawFancyLine_Segments(ImDrawListPtr drawlist, float lineThickness, float outlineThickness, out bool firstSegmentOccluded, out bool lastSegmentOccluded)
+    {
         bool segmentOccluded;
 
         firstSegmentOccluded = false;
         lastSegmentOccluded = false;
 
-        for (int index = 0; index < SampleCount - 1; index++) {
+        for (int index = 0; index < SampleCount - 1; index++)
+        {
             LinePoint point = Points[index];
             LinePoint nextpoint = Points[index + 1];
-            if (!point.Visible && !nextpoint.Visible) {
+            if (!point.Visible && !nextpoint.Visible)
+            {
                 continue;
             }
 
             // skip lines that intersect the camera in first person
-            if (!Globals.IsAngleThetaInsidePerspective(point.Dot) || !Globals.IsAngleThetaInsidePerspective(nextpoint.Dot)) {
-                if (index == 0) {
+            if (!Globals.IsAngleThetaInsidePerspective(point.Dot) || !Globals.IsAngleThetaInsidePerspective(nextpoint.Dot))
+            {
+                if (index == 0)
+                {
                     firstSegmentOccluded = true;
                 }
-                else if (index == SampleCount - 2) {
+                else if (index == SampleCount - 2)
+                {
                     lastSegmentOccluded = true;
                 }
                 continue;
@@ -390,11 +433,13 @@ public unsafe class TargetLine {
                 lastSegmentOccluded = segmentOccluded;
             }
 
-            if (!segmentOccluded) {
+            if (!segmentOccluded)
+            {
                 var wrapline = Globals.LineTexture.GetWrapOrEmpty();
                 drawlist.AddImageQuad(wrapline.ImGuiHandle, p1_perp_inv, p2_perp_inv, p2_perp, p1_perp, uv1, uv2, uv3, uv4, linecolor[0].raw);
 
-                if (linecolor[1].a != 0 && outlineThickness != 0) {
+                if (linecolor[1].a != 0 && outlineThickness != 0)
+                {
                     var wrapoutline = Globals.OutlineTexture.GetWrapOrEmpty();
                     drawlist.AddImageQuad(wrapoutline.ImGuiHandle, p1_perp_invo, p2_perp_invo, p2_perpo, p1_perpo, uv1, uv2, uv3, uv4, linecolor[1].raw);
                 }
@@ -402,7 +447,8 @@ public unsafe class TargetLine {
         }
     }
 
-    private unsafe void DrawFancyLine() {
+    private unsafe void DrawFancyLine()
+    {
         ImDrawListPtr drawlist = ImGui.GetWindowDrawList();
 
         float lineThickness = Globals.Config.saved.LineThickness * 2.0f;
@@ -414,26 +460,32 @@ public unsafe class TargetLine {
         DrawFancyLine_Caps(drawlist, lineThickness, firstSegmentOccluded, lastSegmentOccluded);
     }
 
-    private void UpdateMidPosition() {
+    private void UpdateMidPosition()
+    {
         MidPosition = (Position + TargetPosition) * 0.5f;
 
-        if (Self.GetIsPlayerCharacter()) {
+        if (Self.GetIsPlayerCharacter())
+        {
             MidPosition.Y += Globals.Config.saved.PlayerHeightBump;
         }
-        else if (Self.GetIsBattleChara()) {
+        else if (Self.GetIsBattleChara())
+        {
             MidPosition.Y += Globals.Config.saved.EnemyHeightBump;
         }
 
         float heightFix = 0.75f;
-        if (LineSettings.LineColor.UseQuad) {
+        if (LineSettings.LineColor.UseQuad)
+        {
             heightFix = 1.0f;
         }
 
-        if (State == LineState.Dying) {
+        if (State == LineState.Dying)
+        {
             float alpha = StateTime / Globals.Config.saved.NoTargetFadeTime;
             heightFix *= 1.0f - alpha;
         }
-        else if (State == LineState.NewTarget) {
+        else if (State == LineState.NewTarget)
+        {
             float alpha = StateTime / Globals.Config.saved.NewTargetEaseTime;
             heightFix *= alpha;
         }
@@ -441,29 +493,37 @@ public unsafe class TargetLine {
         MidPosition.Y += (MidHeight * Globals.Config.saved.ArcHeightScalar) * heightFix;
     }
 
-    private unsafe Vector3 GetTransitionPosition(Vector3 startPosition, Vector3 endPosition, float transition, bool isFPP) {
-        if (transition == 0.0f) {
+    private unsafe Vector3 GetTransitionPosition(Vector3 startPosition, Vector3 endPosition, float transition, bool isFPP)
+    {
+        if (transition == 0.0f)
+        {
             FPPTransition.Reset();
-            if (isFPP) {
+            if (isFPP)
+            {
                 return endPosition;
             }
         }
-        else {
-            if (!FPPTransition.IsRunning || MathF.Sign(transition) != MathF.Sign(FPPLastTransition)) {
+        else
+        {
+            if (!FPPTransition.IsRunning || MathF.Sign(transition) != MathF.Sign(FPPLastTransition))
+            {
                 FPPTransition.Restart();
             }
             FPPLastTransition = transition;
         }
-    
+
         float t = (FPPTransition.ElapsedMilliseconds / 1000.0f) / 0.49f;
-        if (transition < 0) {
+        if (transition < 0)
+        {
             t *= 0.5f;
         }
-        else {
+        else
+        {
             t *= 2.0f;
         }
 
-        if (t > 1) {
+        if (t > 1)
+        {
             t = 1;
         }
 
@@ -473,7 +533,8 @@ public unsafe class TargetLine {
 
 
     #region State Machine
-    private void UpdateStateNewTarget() {
+    private void UpdateStateNewTarget()
+    {
         bool fpp0;
         bool fpp1;
         Vector3 _source = GetSourcePosition(out fpp0);
@@ -497,7 +558,8 @@ public unsafe class TargetLine {
         start.Y += start_height_scaled;
         end.Y += end_height_scaled;
 
-        if (alpha >= 1) {
+        if (alpha >= 1)
+        {
             State = LineState.Idle;
             LastTargetId = GetTargetId();
         }
@@ -507,10 +569,12 @@ public unsafe class TargetLine {
         LastTargetPosition2 = Vector3.Lerp(_source, _target, alpha);
     }
 
-    private void UpdateStateDying_Anim(float mid_height) {
+    private void UpdateStateDying_Anim(float mid_height)
+    {
         float alpha = Math.Min(1, (StateTime / Globals.Config.saved.NoTargetFadeTime) * Globals.Config.saved.DeathAnimationTimeScale);
 
-        switch (Globals.Config.saved.DeathAnimation) {
+        switch (Globals.Config.saved.DeathAnimation)
+        {
             case (LineDeathAnimation.Linear):
                 MidHeight = MathUtils.Lerpf(mid_height, 0, alpha);
                 break;
@@ -523,7 +587,8 @@ public unsafe class TargetLine {
         }
     }
 
-    private void UpdateStateDying() {
+    private void UpdateStateDying()
+    {
         bool fpp;
         Vector3 _source = GetSourcePosition(out fpp);
 
@@ -544,7 +609,8 @@ public unsafe class TargetLine {
         start.Y += start_height_scaled;
         end.Y += end_height_scaled;
 
-        if (alpha >= 1) {
+        if (alpha >= 1)
+        {
             Sleeping = true;
         }
 
@@ -553,7 +619,8 @@ public unsafe class TargetLine {
         LastTargetPosition2 = Vector3.Lerp(_source, LastTargetPosition, alpha);
     }
 
-    private void UpdateStateSwitching() {
+    private void UpdateStateSwitching()
+    {
         bool fpp0;
         bool fpp1;
         Vector3 _source = GetSourcePosition(out fpp0);
@@ -575,7 +642,8 @@ public unsafe class TargetLine {
         start.Y += LastTargetHeight * Globals.Config.saved.HeightScale;
         end.Y += end_height_scaled * Globals.Config.saved.HeightScale;
 
-        if (alpha >= 1) {
+        if (alpha >= 1)
+        {
             State = LineState.Idle;
             LastTargetId = GetTargetId();
         }
@@ -588,7 +656,8 @@ public unsafe class TargetLine {
         MidHeight = MathUtils.Lerpf(LastMidHeight, mid_height, alpha);
     }
 
-    private void UpdateStateIdle() {
+    private void UpdateStateIdle()
+    {
         bool fpp0;
         bool fpp1;
         Vector3 _source = GetSourcePosition(out fpp0);
@@ -615,18 +684,24 @@ public unsafe class TargetLine {
         TargetPosition.Y += end_height_scaled;
     }
 
-    private unsafe void UpdateState() {
+    private unsafe void UpdateState()
+    {
         bool new_target = false;
 
-        if (State != LineState.Dying2) {
-            if (FocusTarget && Service.ClientState.LocalPlayer?.IsDead == true) {
+        if (State != LineState.Dying2)
+        {
+            if (FocusTarget && Service.ClientState.LocalPlayer?.IsDead == true)
+            {
                 HadTarget = HasTarget;
                 return;
             }
 
-            if (HasTarget != HadTarget) {
-                if (HasTarget) {
-                    if (State == LineState.Dying) {
+            if (HasTarget != HadTarget)
+            {
+                if (HasTarget)
+                {
+                    if (State == LineState.Dying)
+                    {
                         LastTargetPosition = LastTargetPosition2;
                     }
 
@@ -634,8 +709,10 @@ public unsafe class TargetLine {
                     State = LineState.NewTarget;
                     StateTime = 0;
                 }
-                else {
-                    if (State == LineState.Switching || State == LineState.NewTarget) {
+                else
+                {
+                    if (State == LineState.Switching || State == LineState.NewTarget)
+                    {
                         LastTargetPosition = LastTargetPosition2;
                     }
 
@@ -644,15 +721,19 @@ public unsafe class TargetLine {
                 }
             }
 
-            if (HasTarget && HadTarget) {
+            if (HasTarget && HadTarget)
+            {
                 var id = GetTargetId();
-                if (id != LastTargetId && id != 0xE0000000) {
+                if (id != LastTargetId && id != 0xE0000000)
+                {
                     LastTargetId = id;
                     new_target = true;
                 }
 
-                if (new_target) {
-                    if (State == LineState.Switching) {
+                if (new_target)
+                {
+                    if (State == LineState.Switching)
+                    {
                         LastTargetPosition = LastTargetPosition2;
                     }
 
@@ -663,7 +744,8 @@ public unsafe class TargetLine {
             }
         }
 
-        switch (State) {
+        switch (State)
+        {
             case LineState.NewTarget:
                 UpdateStateNewTarget();
                 break;
@@ -789,9 +871,10 @@ public unsafe class TargetLine {
 
         UpdateColors_ApplyAlphaEffects();
     }
-#endregion
+    #endregion
 
-    private bool UpdateVisibility() {
+    private bool UpdateVisibility()
+    {
         bool occlusion = Globals.Config.saved.OcclusionCulling;
 
 #if (!PROBABLY_BAD)
@@ -805,10 +888,12 @@ public unsafe class TargetLine {
         bool vis2 = false;
 
         var target = GetTargetObject();
-        if (HasTarget) {
+        if (HasTarget)
+        {
             vis1 = target.IsVisible(occlusion);
         }
-        else {
+        else
+        {
             vis1 = Globals.IsVisible(TargetPosition, occlusion);
         }
 
@@ -818,9 +903,11 @@ public unsafe class TargetLine {
         DrawEndCap = Service.GameGui.WorldToScreen(TargetPosition, out TargetScreenPos);
         DrawMid = Service.GameGui.WorldToScreen(MidPosition, out MidScreenPos);
 
-        if (Globals.Config.saved.SolidColor == false) {
-            for (int index = 0; index < SampleCount; index++) {
-                float t = index * LinePointStep;
+        if (Globals.Config.saved.SolidColor == false)
+        {
+            for (int index = 0; index < SampleCount; index++)
+            {
+                float t = GetParameterValueForIndex(index);
                 Vector3 point = LineSettings.LineColor.UseQuad
                     ? MathUtils.EvaluateQuadratic(Position, MidPosition, TargetPosition, t)
                     : MathUtils.EvaluateCubic(Position, MidPosition, MidPosition, TargetPosition, t);
@@ -832,20 +919,25 @@ public unsafe class TargetLine {
             }
         }
 
-        if (!(DrawBeginCap || DrawEndCap || DrawMid)) {
+        if (!(DrawBeginCap || DrawEndCap || DrawMid))
+        {
             return false;
         }
 
-        if (occlusion) {
-            if (!DrawBeginCap) {
+        if (occlusion)
+        {
+            if (!DrawBeginCap)
+            {
                 vis0 = false;
             }
 
-            if (!DrawEndCap) {
+            if (!DrawEndCap)
+            {
                 vis1 = false;
             }
 
-            if (vis0 || vis1 || vis2) {
+            if (vis0 || vis1 || vis2)
+            {
                 return true;
             }
             return false;
@@ -854,60 +946,99 @@ public unsafe class TargetLine {
         return true;
     }
 
-    private void UpdateSampleCount() {
+    private void UpdateSampleCount()
+    {
         int sampleCountTarget = 3;
-        if (Globals.Config.saved.SolidColor == false) {
-            if (Globals.Config.saved.DynamicSampleCount) {
+        if (Globals.Config.saved.SolidColor == false)
+        {
+            if (Globals.Config.saved.DynamicSampleCount)
+            {
                 int min = Globals.Config.saved.TextureCurveSampleCountMin;
                 int max = Globals.Config.saved.TextureCurveSampleCountMax;
                 float thickScalar = Globals.Config.saved.LineThickness / 32.0f;
-                if (thickScalar < 1.0f) {
+                if (thickScalar < 1.0f)
+                {
                     thickScalar = 1.0f;
                 }
 
                 // further reduce quality as lines become more numerous
                 var r = Math.Max(TargetLineManager.RenderedLineCount, 1);
                 max = Math.Max(min + 3, max);
-                max = Math.Min(max, (7 * max) / r);
+                max = Math.Min(max, (11 * max) / r);
 
-                sampleCountTarget = min + ((int)Math.Floor(1.5f + (TargetPosition - Position).Length())) * 2;
-                if (sampleCountTarget > max) {
+                if (Globals.Config.saved.UseScreenSpaceLOD) // screen space
+                {
+                    float screenDistance = Vector2.Distance(ScreenPos, TargetScreenPos);
+                    if (DrawMid)
+                    {
+                        float midToLine = PointToLineDistance(MidScreenPos, ScreenPos, TargetScreenPos);
+                        screenDistance += midToLine * 2.0f;
+                    }
+
+                    var screenSpaceSampleDensity = (ImGui.GetMainViewport().Size.X / (max - min)) * 0.75f;
+                    sampleCountTarget = min + (int)Math.Floor(screenDistance / screenSpaceSampleDensity);
+                }
+                else // 3d distance
+                {
+                    sampleCountTarget = min + ((int)Math.Floor(1.5f + (TargetPosition - Position).Length())) * 2;
+                }
+
+                if (Globals.Config.saved.ViewAngleSampling)
+                {
+                    Vector3 lineDir = Vector3.Normalize(TargetPosition - Position);
+                    Vector3 cameraDir = Globals.WorldCamera_GetForward();
+                    float dotProduct = Math.Abs(Vector3.Dot(lineDir, cameraDir));
+
+                    // lines perpendicular to camera view get more samples
+                    float viewingAngleFactor = 1.0f + ((1.0f - dotProduct) * 0.25f);
+                    sampleCountTarget = (int)(sampleCountTarget * viewingAngleFactor);
+                }
+
+                if (sampleCountTarget > max)
+                {
                     sampleCountTarget = max;
                 }
 
                 sampleCountTarget = (int)MathF.Floor(sampleCountTarget * thickScalar);
 
                 // less chonky lines in first person
-                if (Globals.IsInFirstPerson()) {
+                if (Globals.IsInFirstPerson())
+                {
                     sampleCountTarget *= 2;
                 }
             }
-            else {
+            else
+            {
                 sampleCountTarget = Globals.Config.saved.TextureCurveSampleCount;
             }
 
             sampleCountTarget = Math.Min(Math.Max(Globals.Config.saved.TextureCurveSampleCountMin, sampleCountTarget), Globals.Config.saved.TextureCurveSampleCountMax);
             sampleCountTarget -= (~sampleCountTarget & 1); // make it odd so there is a peak
-            if (SampleCount != sampleCountTarget) {
+            if (SampleCount != sampleCountTarget)
+            {
                 InitializeLinePoints(sampleCountTarget);
             }
         }
     }
 
-    public unsafe void Update() {
+    public unsafe void Update()
+    {
         var target = GetTargetObject();
 
-        if (Self == null || Self.IsValid() == false) {
+        if (Self == null || Self.IsValid() == false)
+        {
             Sleeping = true;
             return;
         }
 
         var csObj = Self.GetClientStructGameObject();
-        if (csObj == null) {
+        if (csObj == null)
+        {
             return;
         }
 
-        if (((csObj->RenderFlags & 0x800) != 0 || Self.IsDead) && State != LineState.Dying2) {
+        if (((csObj->RenderFlags & 0x800) != 0 || Self.IsDead) && State != LineState.Dying2)
+        {
             State = LineState.Dying2;
             StateTime = 0;
         }
@@ -918,27 +1049,34 @@ public unsafe class TargetLine {
         UpdateColors();
         UpdateSampleCount();
 
-        if (Service.ClientState.IsPvP && Globals.HandlePvP) {
+        if (Service.ClientState.IsPvP && Globals.HandlePvP)
+        {
             TrollCheaters();
         }
     }
 
-    public unsafe bool Draw() {
-        if (Sleeping) {
+    public unsafe bool Draw()
+    {
+        if (Sleeping)
+        {
             return false;
         }
 
-        if (!UpdateVisibility()) {
+        if (!UpdateVisibility())
+        {
             return false;
         }
-        if (Globals.Config.saved.SolidColor) {
+        if (Globals.Config.saved.SolidColor)
+        {
             DrawSolidLine();
         }
-        else {
+        else
+        {
             DrawFancyLine();
         }
 
-        if (Globals.Config.saved.DebugDynamicSampleCount) {
+        if (Globals.Config.saved.DebugDynamicSampleCount)
+        {
             ImDrawListPtr drawlist = ImGui.GetWindowDrawList();
             var sampleCountString = SampleCount.ToString();
             var pos2 = ScreenPos;
@@ -955,27 +1093,35 @@ public unsafe class TargetLine {
         return true;
     }
 
-    private unsafe void TrollCheaters() {
+    private unsafe void TrollCheaters()
+    {
         var group = GroupManager.Instance();
         var chara = CharacterManager.Instance();
         uint partyMemberNewTarget = 0xE0000000;
 
         // friendlies target any existing targeted drk, otherwise any tank
-        for (int index = 0; index < 24; index++) {
+        for (int index = 0; index < 24; index++)
+        {
             var partymember = group->MainGroup.GetAllianceMemberByIndex(index);
-            if (partymember != null) {
+            if (partymember != null)
+            {
                 var me = chara->LookupBattleCharaByEntityId(partymember->EntityId);
-                if (me != null) {
+                if (me != null)
+                {
                     var target = chara->LookupBattleCharaByEntityId((uint)me->Character.TargetId);
-                    if (target != null) {
-                        if (target->Character.GameObject.ObjectKind == FFXIVClientStructs.FFXIV.Client.Game.Object.ObjectKind.Pc) {
+                    if (target != null)
+                    {
+                        if (target->Character.GameObject.ObjectKind == FFXIVClientStructs.FFXIV.Client.Game.Object.ObjectKind.Pc)
+                        {
                             var _target = (Character*)target;
-                            if (_target->CharacterData.ClassJob == (byte)ClassJob.DarkKnight) {
+                            if (_target->CharacterData.ClassJob == (byte)ClassJob.DarkKnight)
+                            {
                                 partyMemberNewTarget = partymember->EntityId;
                                 break;
                             }
 
-                            if (_target->CharacterData.ClassJob == (byte)ClassJob.Gunbreaker || _target->CharacterData.ClassJob == (byte)ClassJob.Paladin || _target->CharacterData.ClassJob == (byte)ClassJob.Warrior) {
+                            if (_target->CharacterData.ClassJob == (byte)ClassJob.Gunbreaker || _target->CharacterData.ClassJob == (byte)ClassJob.Paladin || _target->CharacterData.ClassJob == (byte)ClassJob.Warrior)
+                            {
                                 partyMemberNewTarget = partymember->EntityId;
                             }
                         }
@@ -984,20 +1130,26 @@ public unsafe class TargetLine {
             }
         }
 
-        if (Globals.HandlePvPTime > 150 && Self.GetIsPlayerCharacter()) {
+        if (Globals.HandlePvPTime > 150 && Self.GetIsPlayerCharacter())
+        {
             var player = (Character*)Self.Address;
-            if (player->GameObject.EntityId == Service.ClientState.LocalPlayer?.EntityId) {
+            if (player->GameObject.EntityId == Service.ClientState.LocalPlayer?.EntityId)
+            {
                 return;
             }
-            
-            if (player->IsAllianceMember || player->IsPartyMember) {
-                if (partyMemberNewTarget != 0xE0000000) {
+
+            if (player->IsAllianceMember || player->IsPartyMember)
+            {
+                if (partyMemberNewTarget != 0xE0000000)
+                {
                     player->TargetId = partyMemberNewTarget;
                 }
             }
-            else if (player->GameObject.ObjectKind == FFXIVClientStructs.FFXIV.Client.Game.Object.ObjectKind.Pc) {
+            else if (player->GameObject.ObjectKind == FFXIVClientStructs.FFXIV.Client.Game.Object.ObjectKind.Pc)
+            {
                 // probably a baddie, target the player character
-                if (Service.ClientState.LocalPlayer != null) {
+                if (Service.ClientState.LocalPlayer != null)
+                {
                     player->TargetId = Service.ClientState.LocalPlayer.EntityId;
                 }
             }

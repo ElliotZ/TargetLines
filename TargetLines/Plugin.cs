@@ -17,6 +17,7 @@ public class Plugin : IDalamudPlugin {
     public string Name => "TargetLines";
 
     private bool WasInPvP = false;
+    private bool PlayerWasNull = true;
 
     private const ImGuiWindowFlags OVERLAY_WINDOW_FLAGS =
           ImGuiWindowFlags.NoBackground
@@ -101,10 +102,22 @@ public class Plugin : IDalamudPlugin {
         Windows.System.Draw();
 
         if (Service.ClientState.LocalPlayer == null) {
+            PlayerWasNull = true;
             return;
         }
 
+        if (PlayerWasNull)
+        {
+            TargetLineManager.InitializeTargetLines();
+            PlayerWasNull = false;
+        }
+
         bool combat_flag = Service.Condition[ConditionFlag.InCombat];
+
+        if (Service.Condition[ConditionFlag.OccupiedInCutSceneEvent] || Service.Condition[ConditionFlag.WatchingCutscene])
+        {
+            return;
+        }
 
         if (!Globals.Config.saved.OnlyUnsheathed
             || (Service.ClientState.LocalPlayer.StatusFlags & Dalamud.Game.ClientState.Objects.Enums.StatusFlags.WeaponOut) != 0) {

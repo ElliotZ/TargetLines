@@ -430,6 +430,18 @@ internal class ConfigWindow : WindowWrapper {
                     if (DrawPerformanceImpact(ConfigPerformanceImpact.Medium)) {
                         ImGui.SetTooltip("This value represents how many samples are used to produce the target line effect. Lower values may have better performance");
                     }
+
+                    ImGui.TextDisabled($"[ {(Globals.Config.saved.UseScreenSpaceLOD ? 'X' : ' ')} ] Use ScreenSpace LOD");
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Beneficial))
+                    {
+                        ImGui.SetTooltip("Enable \"Dynamic Smoothness\" to configure.");
+                    }
+
+                    ImGui.TextDisabled($"[ {(Globals.Config.saved.ViewAngleSampling ? 'X' : ' ')} ] View Angle Sampling");
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Beneficial))
+                    {
+                        ImGui.SetTooltip("Enable \"Dynamic Smoothness\" to configure.");
+                    }
                 }
                 else {
                     should_save |= ImGui.SliderInt("Minimum Smoothness Steps", ref Globals.Config.saved.TextureCurveSampleCountMin, 3, Globals.Config.saved.TextureCurveSampleCountMax - 3);
@@ -440,6 +452,18 @@ internal class ConfigWindow : WindowWrapper {
                     should_save |= ImGui.SliderInt("Maximum Smoothness Steps", ref Globals.Config.saved.TextureCurveSampleCountMax, Globals.Config.saved.TextureCurveSampleCountMin + 3, 512);
                     if (DrawPerformanceImpact(ConfigPerformanceImpact.Low)) {
                         ImGui.SetTooltip("This value represents the maximum number of samples used to produce the target line effect. Lower values may have better performance when there are longer lines");
+                    }
+
+                    should_save |= ImGui.Checkbox("Use ScreenSpace LOD", ref Globals.Config.saved.UseScreenSpaceLOD);
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Beneficial))
+                    {
+                        ImGui.SetTooltip("If enabled, line LOD will be sampled using screen space instead of 3D space.");
+                    }
+
+                    should_save |= ImGui.Checkbox("View Angle Sampling", ref Globals.Config.saved.ViewAngleSampling);
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Beneficial))
+                    {
+                        ImGui.SetTooltip("If enabled, line LOD will be reduced when they are not perpendicular to the camera.");
                     }
                 }
                 ImGui.TreePop();
