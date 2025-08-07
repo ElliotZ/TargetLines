@@ -1,5 +1,5 @@
 ﻿using DrahsidLib;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -287,7 +287,7 @@ internal class ConfigWindow : WindowWrapper {
                     ImGui.SetTooltip("If disabled, this line will not render");
                 }
 
-                if (ImGui.InputInt($"Priority###Priority{guid}", ref settings.Priority, 1, 1, ImGuiInputTextFlags.EnterReturnsTrue)) {
+                if (ImGui.InputInt($"Priority###Priority{guid}", ref settings.Priority, 1, 1, default, ImGuiInputTextFlags.EnterReturnsTrue)) {
                     Globals.Config.SortLineColors();
                     should_save = true;
                     break;

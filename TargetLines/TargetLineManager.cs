@@ -3,7 +3,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using Dalamud.Game.ClientState.Objects.Types;
 using System;
 using System.Numerics;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System.Collections.Generic;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 

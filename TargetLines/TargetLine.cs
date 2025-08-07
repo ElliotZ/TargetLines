@@ -3,7 +3,7 @@ using DrahsidLib;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -360,7 +360,7 @@ public unsafe class TargetLine {
             var wrap = Globals.EdgeTexture.GetWrapOrEmpty();
             if (wrap != null)
             {
-                drawlist.AddImage(wrap.ImGuiHandle, start_p1, start_p2, uv1, uv3, LineColor.raw);
+                drawlist.AddImage(wrap.Handle, start_p1, start_p2, uv1, uv3, LineColor.raw);
             }
         }
 
@@ -369,7 +369,7 @@ public unsafe class TargetLine {
             var wrap = Globals.EdgeTexture.GetWrapOrEmpty();
             if (wrap != null)
             {
-                drawlist.AddImage(wrap.ImGuiHandle, end_p1, end_p2, uv1, uv3, linecolor_end->raw);
+                drawlist.AddImage(wrap.Handle, end_p1, end_p2, uv1, uv3, linecolor_end->raw);
             }
         }
     }
@@ -436,12 +436,12 @@ public unsafe class TargetLine {
             if (!segmentOccluded)
             {
                 var wrapline = Globals.LineTexture.GetWrapOrEmpty();
-                drawlist.AddImageQuad(wrapline.ImGuiHandle, p1_perp_inv, p2_perp_inv, p2_perp, p1_perp, uv1, uv2, uv3, uv4, linecolor[0].raw);
+                drawlist.AddImageQuad(wrapline.Handle, p1_perp_inv, p2_perp_inv, p2_perp, p1_perp, uv1, uv2, uv3, uv4, linecolor[0].raw);
 
                 if (linecolor[1].a != 0 && outlineThickness != 0)
                 {
                     var wrapoutline = Globals.OutlineTexture.GetWrapOrEmpty();
-                    drawlist.AddImageQuad(wrapoutline.ImGuiHandle, p1_perp_invo, p2_perp_invo, p2_perpo, p1_perpo, uv1, uv2, uv3, uv4, linecolor[1].raw);
+                    drawlist.AddImageQuad(wrapoutline.Handle, p1_perp_invo, p2_perp_invo, p2_perpo, p1_perpo, uv1, uv2, uv3, uv4, linecolor[1].raw);
                 }
             }
         }
