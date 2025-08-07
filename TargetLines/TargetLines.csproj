@@ -49,7 +49,7 @@
 		<PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
 	</ItemGroup>
   
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Unlocked|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)'=='Unlocked'">
 	  <DefineConstants>PROBABLY_BAD</DefineConstants>
 	  <Optimize>False</Optimize>
 	</PropertyGroup>
