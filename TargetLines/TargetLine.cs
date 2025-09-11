@@ -237,7 +237,7 @@ public unsafe class TargetLine {
         {
             fpp = Globals.IsInFirstPerson();
             var cam = Service.CameraManager->Camera;
-            float transition = Marshal.PtrToStructure<float>(((IntPtr)cam) + 0x1E0); // TODO: place in struct
+            float transition = cam->Transition; //Marshal.PtrToStructure<float>(((IntPtr)cam) + 0x1E0); // TODO: place in struct
             if (fpp || transition != 0 || FPPTransition.IsRunning)
             {
                 Vector3 cameraPosition = Globals.WorldCamera_GetPos() + (-2.0f * Globals.WorldCamera_GetForward());
