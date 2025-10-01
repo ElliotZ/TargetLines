@@ -4,6 +4,7 @@
         <LangVersion>preview</LangVersion>
         <NoWarn>1701;1702;CS0472;CA1416</NoWarn>
 		<Configurations>Debug;Release;Unlocked</Configurations>
+		<AssemblyName>TargetLinesX</AssemblyName>
     </PropertyGroup>
 
     <PropertyGroup>
