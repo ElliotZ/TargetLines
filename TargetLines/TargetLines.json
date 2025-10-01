@@ -1,10 +1,10 @@
 ﻿{
-    "Author": "Drahsid",
-    "Name": "Target Lines",
-    "InternalName": "TargetLines",
-    "Description": "Customizable target lines",
-    "Punchline": "Customizable target lines",
-    "RepoUrl": "https://github.com/Drahsid/TargetLines"
+    "Author": "Drahsid, ElliotZ",
+    "Name": "Target Lines Ex",
+    "InternalName": "TargetLinesX",
+    "Description": "自定义目标连线（战场可用，嘘）",
+    "Punchline": "自定义目标连线",
+    "RepoUrl": "https://github.com/ElliotZ/TargetLines"
 }
 
 
