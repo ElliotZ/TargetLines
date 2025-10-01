@@ -1,4 +1,4 @@
-﻿<Project Sdk="Dalamud.NET.Sdk/13.0.0">
+﻿<Project Sdk="Dalamud.CN.NET.Sdk/13.0.0">
 	<PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <LangVersion>preview</LangVersion>
@@ -53,16 +53,16 @@
 	  <DefineConstants>PROBABLY_BAD</DefineConstants>
 	  <Optimize>False</Optimize>
 	</PropertyGroup>
-	
-	<ItemGroup>
-        <ProjectReference Include="..\DrahsidLib\DrahsidLib.csproj" />
-    </ItemGroup>
 
 	<ItemGroup>
 		<Content Include="images\icon.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Visible>false</Visible>
 		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\DrahsidLib\DrahsidLib.csproj" />
 	</ItemGroup>
 
 </Project>

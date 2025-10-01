@@ -8,8 +8,8 @@ namespace TargetLines;
 
 internal class Globals {
     public static double Runtime = 0.0;
-    public static double HandlePvPTime = 0.0;
-    public static bool HandlePvP = false;
+//    public static double HandlePvPTime = 0.0;
+//    public static bool HandlePvP = false;
     public static Configuration Config { get; set; } = null!;
     public static ISharedImmediateTexture LineTexture { get; set; } = null!;
     public static ISharedImmediateTexture OutlineTexture { get; set; } = null!;
