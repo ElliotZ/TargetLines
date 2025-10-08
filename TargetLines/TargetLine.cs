@@ -573,13 +573,13 @@ public unsafe class TargetLine {
 
         switch (Globals.Config.saved.DeathAnimation)
         {
-            case (LineDeathAnimation.Linear):
+            case (LineDeathAnimation.线性):
                 MidHeight = MathUtils.Lerpf(mid_height, 0, alpha);
                 break;
-            case (LineDeathAnimation.Square):
+            case (LineDeathAnimation.平方):
                 MidHeight = MathUtils.QuadraticLerpf(mid_height, 0, alpha);
                 break;
-            case (LineDeathAnimation.Cube):
+            case (LineDeathAnimation.立方):
                 MidHeight = MathUtils.CubicLerpf(mid_height, 0, alpha);
                 break;
         }

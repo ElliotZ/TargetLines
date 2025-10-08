@@ -75,27 +75,27 @@ public static class GameObjectExtensions {
 
     public static unsafe TargetSettings GetTargetSettings(this IGameObject obj) {
         TargetSettings settings = new TargetSettings();
-        settings.Flags = TargetFlags.Any;
+        settings.Flags = TargetFlags.任意;
 
         if (Service.ClientState.LocalPlayer != null) {
             if (obj.EntityId == Service.ClientState.LocalPlayer.EntityId) {
-                settings.Flags |= TargetFlags.Self;
+                settings.Flags |= TargetFlags.自身;
             }
         }
 
         if (obj.GetIsPlayerCharacter()) {
             GroupManager* gm = GroupManager.Instance();
-            settings.Flags |= TargetFlags.Player;
+            settings.Flags |= TargetFlags.玩家;
             foreach (PartyMember member in gm->MainGroup.PartyMembers) {
                 if (member.EntityId == obj.EntityId) {
-                    settings.Flags |= TargetFlags.Party;
+                    settings.Flags |= TargetFlags.小队;
                 }
             }
 
-            if ((gm->MainGroup.AllianceFlags & 1) != 0 && (settings.Flags & TargetFlags.Party) != 0) {
+            if ((gm->MainGroup.AllianceFlags & 1) != 0 && (settings.Flags & TargetFlags.小队) != 0) {
                 foreach (PartyMember member in gm->MainGroup.AllianceMembers) {
                     if (member.EntityId == obj.EntityId) {
-                        settings.Flags |= TargetFlags.Alliance;
+                        settings.Flags |= TargetFlags.团队;
                     }
                 }
             }
@@ -105,33 +105,33 @@ public static class GameObjectExtensions {
             if (DPSJobs.Contains(ID)) {
                 settings.Flags |= TargetFlags.DPS;
                 if (MeleeDPSJobs.Contains(ID)) {
-                    settings.Flags |= TargetFlags.MeleeDPS;
+                    settings.Flags |= TargetFlags.近战;
                 }
                 else if (PhysicalRangedDPSJobs.Contains(ID)) {
-                    settings.Flags |= TargetFlags.PhysicalRangedDPS;
+                    settings.Flags |= TargetFlags.远敏;
                 }
                 else if (MagicalRangedDPSJobs.Contains(ID)) {
-                    settings.Flags |= TargetFlags.MagicalRangedDPS;
+                    settings.Flags |= TargetFlags.法系;
                 }
             }
             else if (HealerJobs.Contains(ID)) {
-                settings.Flags |= TargetFlags.Healer;
+                settings.Flags |= TargetFlags.治疗;
                 if (PureHealerJobs.Contains(ID)) {
-                    settings.Flags |= TargetFlags.PureHealer;
+                    settings.Flags |= TargetFlags.纯治疗;
                 }
                 else if (ShieldHealerJobs.Contains(ID)) {
-                    settings.Flags |= TargetFlags.ShieldHealer;
+                    settings.Flags |= TargetFlags.护盾治疗;
                 }
             }
             else if (TankJobs.Contains(ID)) {
-                settings.Flags |= TargetFlags.Tank;
+                settings.Flags |= TargetFlags.坦克;
             }
             else if (CrafterGathererJobs.Contains(ID)) {
-                settings.Flags |= TargetFlags.CrafterGatherer;
+                settings.Flags |= TargetFlags.生产采集;
             }
         }
         else if (obj.GetIsBattleNPC()) {
-            settings.Flags |= TargetFlags.Enemy;
+            settings.Flags |= TargetFlags.敌人;
         }
         else {
             settings.Flags |= TargetFlags.NPC;

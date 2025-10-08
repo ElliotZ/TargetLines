@@ -3,88 +3,88 @@
 namespace TargetLines; 
 public static class ClassJobHelper {
     public enum TargetFlags : int {
-        /* 0x0001 */ Any = (1 << 0),        // any entity
-        /* 0x0002 */ Player = (1 << 1),     // any Player character
-        /* 0x0004 */ Enemy = (1 << 2),      // any enemy
+        /* 0x0001 */ 任意 = (1 << 0),        // any entity
+        /* 0x0002 */ 玩家 = (1 << 1),     // any Player character
+        /* 0x0004 */ 敌人 = (1 << 2),      // any enemy
         /* 0x0008 */ NPC = (1 << 3),        // any npc
-        /* 0x0010 */ Alliance = (1 << 4),   // any Alliance member (Excluding party)
-        /* 0x0020 */ Party = (1 << 5),      // any Party member
-        /* 0x0040 */ Self = (1 << 6),       // local player
+        /* 0x0010 */ 团队 = (1 << 4),   // any Alliance member (Excluding party)
+        /* 0x0020 */ 小队 = (1 << 5),      // any Party member
+        /* 0x0040 */ 自身 = (1 << 6),       // local player
         /* 0x0080 */ DPS = (1 << 7),        // include DPS
-        /* 0x0100 */ Healer = (1 << 8),     // include Healer
-        /* 0x0200 */ Tank = (1 << 9),       // include Tank
-        /* 0x0400 */ CrafterGatherer = (1 << 10),   // include Crafter/Gatherers
-        /* 0x0800 */ MeleeDPS = (1 << 11),          // include Melee DPS
-        /* 0x1000 */ PhysicalRangedDPS = (1 << 12), // include Physical Ranged DPS
-        /* 0x2000 */ MagicalRangedDPS = (1 << 13),  // include Magical Ranged DPS
-        /* 0x4000 */ PureHealer = (1 << 14),        // include Pure Healer
-        /* 0x8000 */ ShieldHealer = (1 << 15),      // include Shield Healer
+        /* 0x0100 */ 治疗 = (1 << 8),     // include Healer
+        /* 0x0200 */ 坦克 = (1 << 9),       // include Tank
+        /* 0x0400 */ 生产采集 = (1 << 10),   // include Crafter/Gatherers
+        /* 0x0800 */ 近战 = (1 << 11),          // include Melee DPS
+        /* 0x1000 */ 远敏 = (1 << 12), // include Physical Ranged DPS
+        /* 0x2000 */ 法系 = (1 << 13),  // include Magical Ranged DPS
+        /* 0x4000 */ 纯治疗 = (1 << 14),        // include Pure Healer
+        /* 0x8000 */ 护盾治疗 = (1 << 15),      // include Shield Healer
     }
 
     public static string[] TargetFlagDescriptions = {
-        "Unconditionally draw this line",
-        "Draw this line when a player is the target",
-        "Draw this line when an enemy is the target",
-        "Draw this line when an NPC is the target",
-        "Draw this line when an alliance member is the target",
-        "Draw this line when a party member is the target",
-        "Draw this line when you are the target",
-        "Draw this line when a player with a DPS role is the target",
-        "Draw this line when a player with a Healer role is the target",
-        "Draw this line when a player with a Tank role is the target",
-        "Draw this line when a player who is a crafter or gatherer is the target",
-        "Draw this line when a player with a Melee DPS role is the target (nullifies DPS flag)",
-        "Draw this line when a player with a Physical Ranged DPS role is the target (nullifies DPS flag)",
-        "Draw this line when a player with a Magical Ranged DPS role is the target (nullifies DPS flag)",
-        "Draw this line when a player with a Pure Healer role is the target (nullifies Healer flag)",
-        "Draw this line when a player with a Shield Healer role is the target (nullifies Healer flag)"
+        "无条件绘制",
+        "当一名玩家角色是目标时绘制",
+        "当一名敌人是目标时绘制",
+        "当一名NPC是目标时绘制",
+        "当团队成员是目标是绘制",
+        "当小队成员是目标时绘制",
+        "当你是目标是时绘制",
+        "当目标角色职能为DPS时绘制",
+        "当目标角色职能为治疗时绘制",
+        "当目标角色职能为坦克时绘制",
+        "当目标角色职能为生产采集时绘制",
+        "当目标角色职能为近战DPS时绘制（选择后DPS职业选项无效）",
+        "当目标角色职能为远敏DPS时绘制（选择后DPS职业选项无效）",
+        "当目标角色职能为法系DPS时绘制（选择后DPS职业选项无效）",
+        "当目标角色职能为纯治疗时绘制（选择后治疗职业选项无效）",
+        "当目标角色职能为护盾治疗时绘制（选择后治疗职业选项无效）",
     };
 
 
     public enum ClassJob : uint {
-        /*  0 */ Adventurer = 0,
-        /*  1 */ Gladiator,
-        /*  2 */ Pugilist,
-        /*  3 */ Marauder,
-        /*  4 */ Lancer,
-        /*  5 */ Archer, 
-        /*  6 */ Conjurer,
-        /*  7 */ Thaumaturge,
-        /*  8 */ Carpenter,
-        /*  9 */ Blacksmith,
-        /* 10 */ Armorer,
-        /* 11 */ Goldsmith,
-        /* 12 */ Leatherworker,
-        /* 13 */ Weaver,
-        /* 14 */ Alchemist,
-        /* 15 */ Culinarian,
-        /* 16 */ Miner,
-        /* 17 */ Botanist,
-        /* 18 */ Fisher,
-        /* 19 */ Paladin,
-        /* 20 */ Monk,
-        /* 21 */ Warrior,
-        /* 22 */ Dragoon,
-        /* 23 */ Bard,
-        /* 24 */ WhiteMage,
-        /* 25 */ BlackMage,
-        /* 26 */ Arcanist,
-        /* 27 */ Summoner,
-        /* 28 */ Scholar,
-        /* 29 */ Rogue,
-        /* 30 */ Ninja,
-        /* 31 */ Machinist,
-        /* 32 */ DarkKnight,
-        /* 33 */ Astrologian,
-        /* 34 */ Samurai,
-        /* 35 */ RedMage,
-        /* 36 */ BlueMage,
-        /* 37 */ Gunbreaker,
-        /* 38 */ Dancer,
-        /* 39 */ Reaper,
-        /* 40 */ Sage,
-        /* 41 */ Viper,
-        /* 42 */ Pictomancer,
+        /*  0 */ 冒险者 = 0,
+        /*  1 */ 剑术师,
+        /*  2 */ 格斗家,
+        /*  3 */ 斧术师,
+        /*  4 */ 枪术师,
+        /*  5 */ 弓箭手, 
+        /*  6 */ 幻术师,
+        /*  7 */ 咒术师,
+        /*  8 */ 刻木匠,
+        /*  9 */ 锻铁匠,
+        /* 10 */ 铸甲匠,
+        /* 11 */ 雕金匠,
+        /* 12 */ 制革匠,
+        /* 13 */ 裁衣匠,
+        /* 14 */ 炼金术士,
+        /* 15 */ 烹调师,
+        /* 16 */ 采矿工,
+        /* 17 */ 园艺工,
+        /* 18 */ 捕鱼人,
+        /* 19 */ 骑士,
+        /* 20 */ 武僧,
+        /* 21 */ 战士,
+        /* 22 */ 龙骑士,
+        /* 23 */ 诗人,
+        /* 24 */ 白魔法师,
+        /* 25 */ 黑魔法师,
+        /* 26 */ 秘术师,
+        /* 27 */ 召唤师,
+        /* 28 */ 学者,
+        /* 29 */ 双剑师,
+        /* 30 */ 忍者,
+        /* 31 */ 机工士,
+        /* 32 */ 暗黑骑士,
+        /* 33 */ 占星术士,
+        /* 34 */ 武士,
+        /* 35 */ 赤魔法师,
+        /* 36 */ 青魔法师,
+        /* 37 */ 绝枪战士,
+        /* 38 */ 舞者,
+        /* 39 */ 钐镰客,
+        /* 40 */ 贤者,
+        /* 41 */ 蝰蛇剑士,
+        /* 42 */ 绘灵法师,
         Count
     };
 
@@ -105,50 +105,50 @@ public static class ClassJobHelper {
     }
 
     public static List<ClassJob> DPSJobs = new List<ClassJob> {
-        ClassJob.Adventurer, ClassJob.Pugilist, ClassJob.Lancer, ClassJob.Archer,
-        ClassJob.Thaumaturge, ClassJob.Monk, ClassJob.Dragoon, ClassJob.Bard,
-        ClassJob.BlackMage, ClassJob.Arcanist, ClassJob.Summoner, ClassJob.Rogue,
-        ClassJob.Ninja, ClassJob.Machinist, ClassJob.Samurai, ClassJob.RedMage,
-        ClassJob.BlueMage, ClassJob.Dancer, ClassJob.Reaper, ClassJob.Viper, ClassJob.Pictomancer
+        ClassJob.冒险者, ClassJob.格斗家, ClassJob.枪术师, ClassJob.弓箭手,
+        ClassJob.咒术师, ClassJob.武僧, ClassJob.龙骑士, ClassJob.诗人,
+        ClassJob.黑魔法师, ClassJob.秘术师, ClassJob.召唤师, ClassJob.双剑师,
+        ClassJob.忍者, ClassJob.机工士, ClassJob.武士, ClassJob.赤魔法师,
+        ClassJob.青魔法师, ClassJob.舞者, ClassJob.钐镰客, ClassJob.蝰蛇剑士, ClassJob.绘灵法师
     };
 
     public static List<ClassJob> HealerJobs = new List<ClassJob> {
-        ClassJob.Conjurer, ClassJob.WhiteMage, ClassJob.Scholar, ClassJob.Astrologian,
-        ClassJob.Sage
+        ClassJob.幻术师, ClassJob.白魔法师, ClassJob.学者, ClassJob.占星术士,
+        ClassJob.贤者
     };
 
     public static List<ClassJob> TankJobs = new List<ClassJob> {
-        ClassJob.Gladiator, ClassJob.Marauder, ClassJob.Paladin, ClassJob.Warrior,
-        ClassJob.DarkKnight, ClassJob.Gunbreaker
+        ClassJob.剑术师, ClassJob.斧术师, ClassJob.骑士, ClassJob.战士,
+        ClassJob.暗黑骑士, ClassJob.绝枪战士
     };
 
     public static List<ClassJob> CrafterGathererJobs = new List<ClassJob> {
-        ClassJob.Carpenter, ClassJob.Blacksmith, ClassJob.Armorer, ClassJob.Goldsmith,
-        ClassJob.Leatherworker, ClassJob.Weaver, ClassJob.Alchemist, ClassJob.Culinarian,
-        ClassJob.Miner, ClassJob.Botanist, ClassJob.Fisher
+        ClassJob.刻木匠, ClassJob.锻铁匠, ClassJob.铸甲匠, ClassJob.雕金匠,
+        ClassJob.制革匠, ClassJob.裁衣匠, ClassJob.炼金术士, ClassJob.烹调师,
+        ClassJob.采矿工, ClassJob.园艺工, ClassJob.捕鱼人
     };
 
     public static List<ClassJob> MeleeDPSJobs = new List<ClassJob> {
-        ClassJob.Monk, ClassJob.Dragoon, ClassJob.Ninja, ClassJob.Samurai,
-        ClassJob.Reaper, ClassJob.Pugilist, ClassJob.Lancer, ClassJob.Rogue,
-        ClassJob.Adventurer, ClassJob.Viper
+        ClassJob.武僧, ClassJob.龙骑士, ClassJob.忍者, ClassJob.武士,
+        ClassJob.钐镰客, ClassJob.格斗家, ClassJob.枪术师, ClassJob.双剑师,
+        ClassJob.冒险者, ClassJob.蝰蛇剑士
     };
 
     public static List<ClassJob> PhysicalRangedDPSJobs = new List<ClassJob> {
-        ClassJob.Bard, ClassJob.Machinist, ClassJob.Dancer, ClassJob.Archer
+        ClassJob.诗人, ClassJob.机工士, ClassJob.舞者, ClassJob.弓箭手
     };
 
     public static List<ClassJob> MagicalRangedDPSJobs = new List<ClassJob> {
-        ClassJob.BlackMage, ClassJob.Summoner, ClassJob.RedMage, ClassJob.BlueMage,
-        ClassJob.Thaumaturge, ClassJob.Arcanist, ClassJob.Pictomancer
+        ClassJob.黑魔法师, ClassJob.召唤师, ClassJob.赤魔法师, ClassJob.青魔法师,
+        ClassJob.咒术师, ClassJob.秘术师, ClassJob.绘灵法师
     };
 
     public static List<ClassJob> PureHealerJobs = new List<ClassJob> {
-        ClassJob.WhiteMage, ClassJob.Astrologian, ClassJob.Conjurer
+        ClassJob.白魔法师, ClassJob.占星术士, ClassJob.幻术师
     };
 
     public static List<ClassJob> ShieldHealerJobs = new List<ClassJob> {
-        ClassJob.Scholar, ClassJob.Sage
+        ClassJob.学者, ClassJob.贤者
     };
 
     public static bool CompareTargetSettings(ref TargetSettings goal, ref TargetSettings entity) {
@@ -157,12 +157,12 @@ public static class ClassJobHelper {
         bool ret = false;
 
         // entity does not matter if this rule accepts any entity
-        if ((gflags & TargetFlags.Any) != 0) {
+        if ((gflags & TargetFlags.任意) != 0) {
             return true;
         }
 
         // entity must be Player, check if their job is on the job list, if the job list has any entries
-        if (goal.Jobs != 0 && (eflags & TargetFlags.Player) != 0) {
+        if (goal.Jobs != 0 && (eflags & TargetFlags.玩家) != 0) {
             bool invalid_job = true;
             for (int index = 0; index < (int)ClassJob.Count; index++) {
                 ulong jobflag = ClassJobToBit(index);
@@ -179,14 +179,14 @@ public static class ClassJobHelper {
 
         // nullify role flags when specific roles are selected
         if ((gflags & TargetFlags.DPS) != 0) {
-            if ((gflags & TargetFlags.MeleeDPS) != 0 || (gflags & TargetFlags.PhysicalRangedDPS) != 0 || (gflags & TargetFlags.MagicalRangedDPS) != 0) {
+            if ((gflags & TargetFlags.近战) != 0 || (gflags & TargetFlags.远敏) != 0 || (gflags & TargetFlags.法系) != 0) {
                 gflags &= ~TargetFlags.DPS;
             }
         }
 
-        if ((gflags & TargetFlags.Healer) != 0) {
-            if ((gflags & TargetFlags.PureHealer) != 0 || (gflags & TargetFlags.ShieldHealer) != 0) {
-                gflags &= ~TargetFlags.Healer;
+        if ((gflags & TargetFlags.治疗) != 0) {
+            if ((gflags & TargetFlags.纯治疗) != 0 || (gflags & TargetFlags.护盾治疗) != 0) {
+                gflags &= ~TargetFlags.治疗;
             }
         }
 

@@ -125,9 +125,9 @@ public class Plugin : IDalamudPlugin {
 
         if (!Globals.Config.saved.OnlyUnsheathed
             || (Service.ClientState.LocalPlayer.StatusFlags & Dalamud.Game.ClientState.Objects.Enums.StatusFlags.WeaponOut) != 0) {
-            if ((Globals.Config.saved.OnlyInCombat == InCombatOption.None
-                || (Globals.Config.saved.OnlyInCombat == InCombatOption.InCombat && combat_flag))
-                || (Globals.Config.saved.OnlyInCombat == InCombatOption.NotInCombat && !combat_flag)) {
+            if ((Globals.Config.saved.OnlyInCombat == InCombatOption.无
+                || (Globals.Config.saved.OnlyInCombat == InCombatOption.战斗中 && combat_flag))
+                || (Globals.Config.saved.OnlyInCombat == InCombatOption.非战斗中 && !combat_flag)) {
                 if (Globals.Config.saved.ToggledOff == false) {
                     ImGuiUtils.WrapBegin("##TargetLinesOverlay", OVERLAY_WINDOW_FLAGS, DrawOverlay);
                 }

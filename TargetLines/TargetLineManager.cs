@@ -41,15 +41,15 @@ public static class TargetLineManager
             var group = GroupManager.Instance();
             switch (Globals.Config.saved.LinePartyMode) {
                 default:
-                case LinePartyMode.None:
+                case LinePartyMode.无:
                     line.InitializeTargetLine(gameObject);
                     break;
-                case LinePartyMode.PartyOnly:
+                case LinePartyMode.仅小队:
                     if (group->MainGroup.IsEntityIdInParty(gameObject.EntityId) || group->MainGroup.IsEntityIdInParty((uint)gameObject.TargetObjectId)) {
                         line.InitializeTargetLine(gameObject);
                     }
                     break;
-                case LinePartyMode.PartyOnlyInAlliance:
+                case LinePartyMode.团队中仅小队:
                     if (group->MainGroup.IsAlliance) {
                         if (group->MainGroup.IsEntityIdInParty(gameObject.EntityId) || group->MainGroup.IsEntityIdInParty((uint)gameObject.TargetObjectId))
                         {
@@ -60,7 +60,7 @@ public static class TargetLineManager
                         line.InitializeTargetLine(gameObject);
                     }
                     break;
-                case LinePartyMode.AllianceOnly:
+                case LinePartyMode.仅团队:
                     if (group->MainGroup.IsEntityIdInAlliance(gameObject.EntityId) || group->MainGroup.IsEntityIdInAlliance((uint)gameObject.TargetObjectId)) {
                         line.InitializeTargetLine(gameObject);
                     }

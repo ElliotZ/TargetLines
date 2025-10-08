@@ -10,15 +10,15 @@ using static TargetLines.ClassJobHelper;
 namespace TargetLines;
 
 internal enum ConfigPerformanceImpact {
-    Beneficial,
-    None,
-    Low,
-    Medium,
-    High
+    优化,
+    无,
+    低,
+    中,
+    高,
 }
 
 internal class ConfigWindow : WindowWrapper {
-    public static string ConfigWindowName = "Target Lines Config";
+    public static string ConfigWindowName = "Target Lines EX 设置";
     private static Vector2 MinSize = new Vector2(240, 240);
 
     private readonly Vector4 PerformanceHighColor = new Vector4(1, 0, 0, 1);
@@ -85,9 +85,10 @@ internal class ConfigWindow : WindowWrapper {
     private bool DrawJobFlagEditor(ref ulong flags, string guard) {
         bool should_save = false;
         float charsize = ImGui.CalcTextSize("F").X * 24;
-        if (ImGui.TreeNode($"Jobs##Jobs{guard}")) {
+        if (ImGui.TreeNode($"职业##Jobs{guard}")) {
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("If any of these values are enabled, only these specific jobs will be filtered if the entity is a player. Otherwise, these values are completely ignored");
+                ImGui.SetTooltip("如果这些选项中的任何一个被启用的话，当目标是玩家时，"
+                               + "只有选中的职业会绘制。如果不是玩家的话，这些选项是无效的。");
             }
             for (int index = 0; index < (int)ClassJob.Count; index++) {
                 ulong flag = ClassJobToBit(index);
@@ -132,23 +133,23 @@ internal class ConfigWindow : WindowWrapper {
         switch(impact)
         {
             default:
-            case ConfigPerformanceImpact.None:
+            case ConfigPerformanceImpact.无:
                 color = PerformanceNoneColor;
                 break;
-            case ConfigPerformanceImpact.Low:
+            case ConfigPerformanceImpact.低:
                 color = PerformanceLowColor;
                 break;
-            case ConfigPerformanceImpact.Medium:
+            case ConfigPerformanceImpact.中:
                 color = PerformanceMedColor;
                 break;
-            case ConfigPerformanceImpact.High:
+            case ConfigPerformanceImpact.高:
                 color = PerformanceHighColor;
                 break;
-            case ConfigPerformanceImpact.Beneficial:
+            case ConfigPerformanceImpact.优化:
                 color = PerformanceBeneficialColor;
                 break;
         }
-        ImGui.TextColored(color, $"Performance Impact: {impact}");
+        ImGui.TextColored(color, $"性能影响：{impact}");
         return ret;
     }
 
@@ -156,31 +157,31 @@ internal class ConfigWindow : WindowWrapper {
         bool should_save = false;
 
         int selected = (int)Globals.Config.saved.OnlyInCombat;
-        if (ImGui.ListBox("Combat setting", ref selected, Enum.GetNames(typeof(InCombatOption)), (int)InCombatOption.Count)) {
+        if (ImGui.ListBox("战斗设置", ref selected, Enum.GetNames(typeof(InCombatOption)))) {
             Globals.Config.saved.OnlyInCombat = (InCombatOption)selected;
             should_save = true;
         }
 
-        should_save |= ImGui.Checkbox("Only show target lines when unsheathed", ref Globals.Config.saved.OnlyUnsheathed);
+        should_save |= ImGui.Checkbox("只在武器抽出时显示目标线", ref Globals.Config.saved.OnlyUnsheathed);
         if (ImGui.IsItemHovered()) {
-            ImGui.SetTooltip("If enabled, target lines will stop drawing if your weapon is sheathed");
+            ImGui.SetTooltip("启用后，当武器收起时不再绘制目标线");
         }
 
         Vector4 color = Globals.Config.saved.LineColor.Color.Color;
         Vector4 ocolor = Globals.Config.saved.LineColor.OutlineColor.Color;
 
-        should_save |= ImGui.Checkbox("Fallback visible", ref Globals.Config.saved.LineColor.Visible);
+        should_save |= ImGui.Checkbox("显示默认目标线", ref Globals.Config.saved.LineColor.Visible);
         if (ImGui.IsItemHovered()) {
-            ImGui.SetTooltip("If enabled, whenever none of your filters are met, these settings will be used for the target line");
+            ImGui.SetTooltip("如果启用此选项，以下设置会用来绘制默认的目标线");
         }
 
         if (Globals.Config.saved.LineColor.Visible) {
-            if (ImGui.ColorEdit4("Fallback Color", ref color)) {
+            if (ImGui.ColorEdit4("默认颜色", ref color)) {
                 Globals.Config.saved.LineColor.Color.Color = color;
                 should_save = true;
             }
 
-            if (ImGui.ColorEdit4("Fallback Outline Color", ref ocolor)) {
+            if (ImGui.ColorEdit4("默认描边颜色", ref ocolor)) {
                 Globals.Config.saved.LineColor.OutlineColor.Color = ocolor;
                 should_save = true;
             }
@@ -189,13 +190,13 @@ internal class ConfigWindow : WindowWrapper {
         ImGui.Spacing();
         ImGui.Separator();
 
-        should_save |= ImGui.Checkbox("Compact Flag Display", ref Globals.Config.saved.CompactFlagDisplay);
+        should_save |= ImGui.Checkbox("紧凑显示", ref Globals.Config.saved.CompactFlagDisplay);
         if (ImGui.IsItemHovered()) {
-            ImGui.SetTooltip("If enabled, 4 flag options will be displayed per line, as opposed to 2");
+            ImGui.SetTooltip("开启后每行会显示4个选项而不是两个");
         }
 
-        ImGui.Text("Filter & Color settings");
-        if (ImGui.Button("New")) {
+        ImGui.Text("目标过滤以及颜色设定");
+        if (ImGui.Button("新建")) {
             Globals.Config.LineColors.Add(new TargetSettingsPair(new TargetSettings(), new TargetSettings(), new LineColor()));
             Globals.Config.SortLineColors();
             should_save = true;
@@ -225,7 +226,7 @@ internal class ConfigWindow : WindowWrapper {
 
             int priority = settings.GetPairPriority(settings.FocusTarget);
             if (ImGui.TreeNode($"{string.Join('|', from)} -> {string.Join('|', to)} ({priority}{(settings.FocusTarget ? "F" : "")})###LineColorsEntry{guid}")) {
-                if (ImGui.TreeNode($"Source Filters###From{guid}")) {
+                if (ImGui.TreeNode($"源头###From{guid}")) {
                     if (DrawTargetFlagEditor(ref settings.From.Flags, $"From{guid}Flags")) {
                         should_save = true;
                     }
@@ -236,10 +237,10 @@ internal class ConfigWindow : WindowWrapper {
                     ImGui.TreePop();
                 }
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("Conditions that the targeting entity must satisfy to use these settings");
+                    ImGui.SetTooltip("目标线从这些对象发出");
                 }
 
-                if (ImGui.TreeNode($"Target Filters###To{guid}")) {
+                if (ImGui.TreeNode($"被选中###To{guid}")) {
                     if (DrawTargetFlagEditor(ref settings.To.Flags, $"To{guid}Flags")) {
                         should_save = true;
                     }
@@ -250,53 +251,53 @@ internal class ConfigWindow : WindowWrapper {
                     ImGui.TreePop();
                 }
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("Conditions that the targeted entity must satisfy to use these settings");
+                    ImGui.SetTooltip("目标线指向这些对象");
                 }
 
-                if (ImGui.Checkbox("Focus Target", ref settings.FocusTarget))
+                if (ImGui.Checkbox("焦点目标", ref settings.FocusTarget))
                 {
                     should_save = true;
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip("If enabled, this only applies to the targets which are focus-targeted by the player.");
+                    ImGui.SetTooltip("开启之后只有当涉及焦点目标的时候会绘制");
                 }
 
 
-                if (ImGui.ColorEdit4($"Color###Color{guid}", ref color)) {
+                if (ImGui.ColorEdit4($"颜色###Color{guid}", ref color)) {
                     settings.LineColor.Color.Color = color;
                     should_save = true;
                 }
 
-                if (ImGui.ColorEdit4($"Outline Color###OColor{guid}", ref ocolor)) {
+                if (ImGui.ColorEdit4($"描边颜色###OColor{guid}", ref ocolor)) {
                     settings.LineColor.OutlineColor.Color = ocolor;
                     should_save = true;
                 }
 
-                if (ImGui.Checkbox($"Use Quadratic Line###UseQuad{guid}", ref settings.LineColor.UseQuad)) {
+                if (ImGui.Checkbox($"用二次曲线绘制###UseQuad{guid}", ref settings.LineColor.UseQuad)) {
                     should_save = true;
                 }
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("If enabled, this line will use a quadratic formula (as opposed to the default cubic formula). Useful if you would like different lines to have slightly different shapes. Quadratic lines look more like a half circle");
+                    ImGui.SetTooltip("开启之后这条线会用二次曲线方程计算而不是三次曲线方程。如果你想让不同的目标线具有稍微不同的形状的话，可以用这个选项。二次曲线看起来会更加圆一点。");
                 }
 
-                if (ImGui.Checkbox($"Visible###Visible{guid}", ref settings.LineColor.Visible)) {
+                if (ImGui.Checkbox($"可见###Visible{guid}", ref settings.LineColor.Visible)) {
                     should_save = true;
                 }
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("If disabled, this line will not render");
+                    ImGui.SetTooltip("关闭之后这条线将不再绘制");
                 }
 
-                if (ImGui.InputInt($"Priority###Priority{guid}", ref settings.Priority, 1, 1, default, ImGuiInputTextFlags.EnterReturnsTrue)) {
+                if (ImGui.InputInt($"优先级###Priority{guid}", ref settings.Priority, 1, 1, default, ImGuiInputTextFlags.EnterReturnsTrue)) {
                     Globals.Config.SortLineColors();
                     should_save = true;
                     break;
                 }
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("A higher priority is considered to be more important. Setting this to -1 makes the plugin calculate it.");
+                    ImGui.SetTooltip("优先级更高的规则会优先适用。输入-1的话插件会自动配置优先级。");
                 }
 
-                if (ImGui.Button($"Delete###DeleteEntry{guid}")) {
+                if (ImGui.Button($"删除###DeleteEntry{guid}")) {
                     Globals.Config.LineColors.RemoveAt(qndex);
                     Globals.Config.SortLineColors();
                     should_save = true;
@@ -307,7 +308,7 @@ internal class ConfigWindow : WindowWrapper {
                 ImGui.TreePop();
             }
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("source(s) -> target(s) (priority)");
+                ImGui.SetTooltip("源头 -> 目标 (优先级)");
             }
 
             ImGui.Separator();
@@ -316,30 +317,30 @@ internal class ConfigWindow : WindowWrapper {
         ImGui.Spacing();
         ImGui.Separator();
 
-        if (ImGui.Button("Reset To Default")) {
+        if (ImGui.Button("重置设置")) {
             Globals.Config.saved = new SavedConfig();
             Globals.Config.InitializeDefaultLineColorsConfig();
             Globals.Config.Save();
             TargetLineManager.InitializeTargetLines(); // reset lines
         }
         if (ImGui.IsItemHovered()) {
-            ImGui.SetTooltip("Set all of the values to the plugin defaults. This will delete any custom entries that you have made!");
+            ImGui.SetTooltip("将所有设置重置为默认设置。这会删除你添加的目标线配置！");
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("Copy Preset")) {
+        if (ImGui.Button("复制预设")) {
             ImGui.SetClipboardText(JsonConvert.SerializeObject(Globals.Config.LineColors));
         }
         if (ImGui.IsItemHovered()) {
-            ImGui.SetTooltip("Copy your rules to the clipboard");
+            ImGui.SetTooltip("把你的设置复制到剪贴板");
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("Paste Preset")) {
+        if (ImGui.Button("粘贴预设")) {
             Globals.Config.LineColors = JsonConvert.DeserializeObject<List<TargetSettingsPair>>(ImGui.GetClipboardText());
         }
         if (ImGui.IsItemHovered()) {
-            ImGui.SetTooltip("Paste rules from the clipboard. This overwrites your existing rules!");
+            ImGui.SetTooltip("从剪贴板粘贴预设。这会覆盖你现有的所有配置！");
         }
 
         return should_save;
@@ -348,37 +349,38 @@ internal class ConfigWindow : WindowWrapper {
     private bool DrawVisuals() {
         bool should_save = false;
 
-        should_save |= ImGui.Checkbox("Use Legacy Line", ref Globals.Config.saved.SolidColor);
-        if (DrawPerformanceImpact(ConfigPerformanceImpact.Beneficial)) {
-            ImGui.SetTooltip("If enabled, use the original target line effect instead of the newer fancy line effect.\nThis makes lines appear more flat. This does not support the pulsing effect, nor does it support UI collision. This also fixes the sawtooth effect of the fancy lines. This is essentially a simple/clearer lines mode.");
+        should_save |= ImGui.Checkbox("使用传统样式", ref Globals.Config.saved.SolidColor);
+        if (DrawPerformanceImpact(ConfigPerformanceImpact.优化)) {
+            ImGui.SetTooltip("开启之后目标线会使用旧版的绘制方式，而不是比较漂亮的新版绘制方式。\n"
+                           + "目标线看起来会更加的平，并且不支持脉动效果，也不支持UI碰撞。但是这种绘制不会出现锯齿。基本上是青春版目标线。");
         }
 
         ImGui.Separator();
 
-        if (ImGui.TreeNode("Occlusion")) {
-            should_save |= ImGui.Checkbox("Occlusion Culling", ref Globals.Config.saved.OcclusionCulling);
-            if (DrawPerformanceImpact(ConfigPerformanceImpact.High)) {
-                ImGui.SetTooltip("If enabled, target lines will stop drawing if both their start, middle, and end points are not visible. Note that this is always enabled for enemies!");
+        if (ImGui.TreeNode("遮罩")) {
+            should_save |= ImGui.Checkbox("遮罩剔除", ref Globals.Config.saved.OcclusionCulling);
+            if (DrawPerformanceImpact(ConfigPerformanceImpact.高)) {
+                ImGui.SetTooltip("启用之后，如果目标先的起点、中点和终点都在屏幕外的话，将不再绘制目标线。对于敌对目标来说这个选项是永远启用的。");
             }
 
-            var level = ConfigPerformanceImpact.High;
+            var level = ConfigPerformanceImpact.高;
             if (Globals.Config.saved.TextureCurveSampleCount < 32) {
-                level = ConfigPerformanceImpact.Medium;
+                level = ConfigPerformanceImpact.中;
             }
             else if (Globals.Config.saved.DynamicSampleCount) {
-                level = ConfigPerformanceImpact.Low;
+                level = ConfigPerformanceImpact.低;
             }
             if (Globals.Config.saved.SolidColor == false) {
-                should_save |= ImGui.Checkbox("UI Occlusion Culling", ref Globals.Config.saved.UIOcclusion);
+                should_save |= ImGui.Checkbox("UI碰撞剔除", ref Globals.Config.saved.UIOcclusion);
 
                 if (DrawPerformanceImpact(level)) {
-                    ImGui.SetTooltip("If enabled, target lines will not draw segments which intersect with most UI elements. The performance cost of this scales with the configured smoothness steps.");
+                    ImGui.SetTooltip("开启之后，与大多数UI元素相交的目标线的部分将不会绘制。这个选项的性能损耗与曲线平滑度的设置有关。");
                 }
             }
             else {
-                ImGui.TextDisabled($" [ {(Globals.Config.saved.UIOcclusion ? 'X' : ' ')} ] UI Occlusion Culling");
+                ImGui.TextDisabled($" [ {(Globals.Config.saved.UIOcclusion ? 'X' : ' ')} ] UI碰撞剔除");
                 if (DrawPerformanceImpact(level)) {
-                    ImGui.SetTooltip("Disable \"Use Legacy Line\" to configure");
+                    ImGui.SetTooltip("禁用“使用传统样式”之后可以设置。");
                 }
             }
 
@@ -387,160 +389,145 @@ internal class ConfigWindow : WindowWrapper {
         ImGui.Separator();
 
         if (Globals.Config.saved.SolidColor == false) {
-            if (ImGui.TreeNode("Fancy Line Options")) {
-                should_save |= ImGui.Checkbox("Use Pulsing Effect", ref Globals.Config.saved.PulsingEffect);
+            if (ImGui.TreeNode("新式特效设置")) {
+                should_save |= ImGui.Checkbox("使用脉动特效", ref Globals.Config.saved.PulsingEffect);
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("If enabled, while not using solid color lines, the lines will periodically pulse from the source to the target");
+                    ImGui.SetTooltip("开启之后，如果使用新式绘制的话，目标线会从源头向目标周期性地闪烁");
                 }
 
-                should_save |= ImGui.Checkbox("Fade line as it approaches target", ref Globals.Config.saved.FadeToEnd);
+                should_save |= ImGui.Checkbox("接近目标时淡化", ref Globals.Config.saved.FadeToEnd);
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("If enabled, the line will become more transparent as it approaches the target");
+                    ImGui.SetTooltip("开启后目标线在越靠近端点时会变得越透明。");
                 }
 
                 if (Globals.Config.saved.FadeToEnd) {
-                    should_save |= ImGui.SliderFloat("End point opacity %", ref Globals.Config.saved.FadeToEndScalar, 0.0f, 1.0f);
+                    should_save |= ImGui.SliderFloat("端点不透明度 %", ref Globals.Config.saved.FadeToEndScalar, 0.0f, 1.0f);
                 }
                 else
                 {
-                    ImGui.TextDisabled(" End point opacity %");
+                    ImGui.TextDisabled("端点不透明度 %");
                 }
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("Enable \"Fade line as it approaches target\" to configure");
+                    ImGui.SetTooltip("启用“接近目标时淡化”之后可以设置");
                 }
 
-                should_save |= ImGui.Checkbox("Dynamic Smoothness", ref Globals.Config.saved.DynamicSampleCount);
-                if (DrawPerformanceImpact(ConfigPerformanceImpact.Beneficial)) {
-                    ImGui.SetTooltip("When enabled, the sample count will automatically adjust based on target line distance. This may be beneficial to performance.");
+                should_save |= ImGui.Checkbox("动态平滑度", ref Globals.Config.saved.DynamicSampleCount);
+                if (DrawPerformanceImpact(ConfigPerformanceImpact.优化)) {
+                    ImGui.SetTooltip("开启后目标线的绘制采样数会随距离自动调整。这也许能提高性能。");
                 }
 
                 int selected = (int)Globals.Config.saved.LinePartyMode;
-                if (ImGui.ListBox("Party Filter Mode", ref selected, Enum.GetNames(typeof(LinePartyMode)), (int)LinePartyMode.Count))
+                if (ImGui.ListBox("小队过滤模式", ref selected, Enum.GetNames(typeof(LinePartyMode))))
                 {
                     Globals.Config.saved.LinePartyMode = (LinePartyMode)selected;
                     should_save = true;
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip("PartyOnly = Only draw lines to/from the party\nPartyOnlyInAlliance = Only draw lines to/from the party when in an active alliance\nAllianceOnly = Only draw lines to/from the alliance");
+                    ImGui.SetTooltip("PartyOnly = 只绘制小队成员相关的目标线\n"
+                                   + "PartyOnlyInAlliance = 在团队中，只绘制小队成员相关的目标线\n"
+                                   + "AllianceOnly = 只绘制团队成员相关的目标线");
                 }
 
                 if (!Globals.Config.saved.DynamicSampleCount) {
-                    should_save |= ImGui.SliderInt("Smoothness Steps", ref Globals.Config.saved.TextureCurveSampleCount, 3, 512);
-                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Medium)) {
-                        ImGui.SetTooltip("This value represents how many samples are used to produce the target line effect. Lower values may have better performance");
+                    should_save |= ImGui.SliderInt("采样数", ref Globals.Config.saved.TextureCurveSampleCount, 3, 512);
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.中)) {
+                        ImGui.SetTooltip("绘制目标线所用的采样数。降低数值可以提高性能。");
                     }
 
-                    ImGui.TextDisabled($"[ {(Globals.Config.saved.UseScreenSpaceLOD ? 'X' : ' ')} ] Use ScreenSpace LOD");
-                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Beneficial))
+                    ImGui.TextDisabled($"[ {(Globals.Config.saved.UseScreenSpaceLOD ? 'X' : ' ')} ] 使用屏幕空间LOD");
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.优化))
                     {
-                        ImGui.SetTooltip("Enable \"Dynamic Smoothness\" to configure.");
+                        ImGui.SetTooltip("启用“动态平滑度”之后可以设置。");
                     }
 
-                    ImGui.TextDisabled($"[ {(Globals.Config.saved.ViewAngleSampling ? 'X' : ' ')} ] View Angle Sampling");
-                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Beneficial))
+                    ImGui.TextDisabled($"[ {(Globals.Config.saved.ViewAngleSampling ? 'X' : ' ')} ] 视角采样");
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.优化))
                     {
-                        ImGui.SetTooltip("Enable \"Dynamic Smoothness\" to configure.");
+                        ImGui.SetTooltip("启用“动态平滑度”之后可以设置。");
                     }
                 }
                 else {
-                    should_save |= ImGui.SliderInt("Minimum Smoothness Steps", ref Globals.Config.saved.TextureCurveSampleCountMin, 3, Globals.Config.saved.TextureCurveSampleCountMax - 3);
-                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Medium)) {
-                        ImGui.SetTooltip("This value represents the minimum number of samples used to produce the target line effect. Lower values may have better performance");
+                    should_save |= ImGui.SliderInt("最小平滑度", ref Globals.Config.saved.TextureCurveSampleCountMin, 3, Globals.Config.saved.TextureCurveSampleCountMax - 3);
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.中)) {
+                        ImGui.SetTooltip("绘制目标线所用的最小采样数。降低数值可以提高性能。");
                     }
 
-                    should_save |= ImGui.SliderInt("Maximum Smoothness Steps", ref Globals.Config.saved.TextureCurveSampleCountMax, Globals.Config.saved.TextureCurveSampleCountMin + 3, 512);
-                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Low)) {
-                        ImGui.SetTooltip("This value represents the maximum number of samples used to produce the target line effect. Lower values may have better performance when there are longer lines");
+                    should_save |= ImGui.SliderInt("最大平滑度", ref Globals.Config.saved.TextureCurveSampleCountMax, Globals.Config.saved.TextureCurveSampleCountMin + 3, 512);
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.低)) {
+                        ImGui.SetTooltip("绘制目标线所用的最大采样数。降低数值可以在绘制比较长的目标线时提高性能。");
                     }
 
-                    should_save |= ImGui.Checkbox("Use ScreenSpace LOD", ref Globals.Config.saved.UseScreenSpaceLOD);
-                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Beneficial))
+                    should_save |= ImGui.Checkbox("使用屏幕空间LOD", ref Globals.Config.saved.UseScreenSpaceLOD);
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.优化))
                     {
-                        ImGui.SetTooltip("If enabled, line LOD will be sampled using screen space instead of 3D space.");
+                        ImGui.SetTooltip("开启后目标线的细节层次会使用屏幕空间来采样，而不是用3D空间采样。");
                     }
 
-                    should_save |= ImGui.Checkbox("View Angle Sampling", ref Globals.Config.saved.ViewAngleSampling);
-                    if (DrawPerformanceImpact(ConfigPerformanceImpact.Beneficial))
+                    should_save |= ImGui.Checkbox("视角采样", ref Globals.Config.saved.ViewAngleSampling);
+                    if (DrawPerformanceImpact(ConfigPerformanceImpact.优化))
                     {
-                        ImGui.SetTooltip("If enabled, line LOD will be reduced when they are not perpendicular to the camera.");
+                        ImGui.SetTooltip("开启后如果目标线不垂直于视线的话，会降低相应的细节层次。");
                     }
                 }
                 ImGui.TreePop();
             }
         }
         else {
-            ImGui.TextDisabled(" > Fancy Line Options");
+            ImGui.TextDisabled(" > 新式特效设置");
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("Disable \"Use Legacy Line\" to unfold");
+                ImGui.SetTooltip("禁用“使用传统样式”之后可以展开。");
             }
         }
         ImGui.Separator();
 
-        if (ImGui.TreeNode("General Line Appearance")) {
-            should_save |= ImGui.SliderFloat("Height Scale", ref Globals.Config.saved.HeightScale, 0.0f, 1.0f);
+        if (ImGui.TreeNode("通用目标线外观")) {
+            should_save |= ImGui.SliderFloat("高度比例", ref Globals.Config.saved.HeightScale, 0.0f, 1.0f);
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("This value scales the height of the source and target. 0 is the feet, 1 is the head");
+                ImGui.SetTooltip("设置目标线的竖直位置。0 表示脚底，1 表示头顶。");
             }
 
-            should_save |= ImGui.SliderFloat("Player Arc Height Bump", ref Globals.Config.saved.PlayerHeightBump, 0.0f, 10.0f);
+            should_save |= ImGui.SliderFloat("玩家角色弧高", ref Globals.Config.saved.PlayerHeightBump, 0.0f, 10.0f);
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("If the source of the line is a player, it's starting point will be moved up by this amount");
+                ImGui.SetTooltip("如果目标线从玩家发出，起点会升高这么多。");
             }
 
-            should_save |= ImGui.SliderFloat("Enemy Arc Height Bump", ref Globals.Config.saved.EnemyHeightBump, 0.0f, 10.0f);
+            should_save |= ImGui.SliderFloat("敌对对象弧高", ref Globals.Config.saved.EnemyHeightBump, 0.0f, 10.0f);
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("If the source of the line is an enemy, it's starting point will be moved up by this amount");
+                ImGui.SetTooltip("如果目标线从敌人发出，起点会升高这么多。");
             }
 
-            should_save |= ImGui.SliderFloat("Arc Scale", ref Globals.Config.saved.ArcHeightScalar, 0.0f, 2.0f);
+            should_save |= ImGui.SliderFloat("曲率", ref Globals.Config.saved.ArcHeightScalar, 0.0f, 2.0f);
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("This value scales middle point of the line. 0 will make the line flat, 1 will make the middle point of the line the average height of the source and target higher");
+                ImGui.SetTooltip("目标线中部的比例。0 会让目标线变直，1 会让目标线中点处在两个对象高度的总和处。");
             }
 
-            should_save |= ImGui.SliderFloat("Line Thickness", ref Globals.Config.saved.LineThickness, 0.0f, 64.0f);
+            should_save |= ImGui.SliderFloat("目标线粗细", ref Globals.Config.saved.LineThickness, 0.0f, 64.0f);
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("The thickness of the line. 0 will disable the line");
+                ImGui.SetTooltip("0 会让目标线消失。");
             }
 
-            should_save |= ImGui.SliderFloat("Outline Thickness", ref Globals.Config.saved.OutlineThickness, 0.0f, 72.0f);
+            should_save |= ImGui.SliderFloat("描边粗细", ref Globals.Config.saved.OutlineThickness, 0.0f, 72.0f);
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("The thickness of the outline. 0 will disable the outline");
+                ImGui.SetTooltip("0 会让描边消失。");
             }
 
             ImGui.Spacing();
             ImGui.Spacing();
-            if (ImGui.TreeNode("Line FX")) {
-                should_save |= ImGui.Checkbox("Use Breathing Effect", ref Globals.Config.saved.BreathingEffect);
+            if (ImGui.TreeNode("特效设置")) {
+                should_save |= ImGui.Checkbox("使用呼吸特效", ref Globals.Config.saved.BreathingEffect);
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("If enabled, the opacity of the lines with fade in-and-out based on the alpha values below");
+                    ImGui.SetTooltip("开启后目标线的透明度会呈现呼吸特效。");
                 }
 
-                should_save |= ImGui.SliderFloat("Alpha Fade Amplitude", ref Globals.Config.saved.WaveAmplitudeOffset, 0.0f, 0.5f);
+                should_save |= ImGui.SliderFloat("振幅", ref Globals.Config.saved.WaveAmplitudeOffset, 0.0f, 0.5f);
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("This value represents the maximum difference that the breathing and pulsing effect will have on the opacity of the line");
+                    ImGui.SetTooltip("呼吸特效透明度变化的最大值和最小值的差。");
                 }
 
-                should_save |= ImGui.SliderFloat("Alpha Frequency", ref Globals.Config.saved.WaveFrequencyScalar, 0.0f, 10.0f);
+                should_save |= ImGui.SliderFloat("频率", ref Globals.Config.saved.WaveFrequencyScalar, 0.0f, 10.0f);
                 if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("This value represents the speed in which the breathing and pulsing effect will happen");
-                }
-
-                //// fancy line
-
-                ImGui.TextDisabled("<- Use Pulsing Effect");
-                if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("Configurable in Fancy Line Options");
-                }
-
-                ImGui.TextDisabled("<- Fade line as it approaches target");
-                if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("Configurable in Fancy Line Options");
-                }
-
-                ImGui.TextDisabled("<- End point opacity %");
-                if (ImGui.IsItemHovered()) {
-                    ImGui.SetTooltip("Configurable in Fancy Line Options");
+                    ImGui.SetTooltip("呼吸特效变化的快慢。");
                 }
             }
 
@@ -548,29 +535,29 @@ internal class ConfigWindow : WindowWrapper {
         }
         ImGui.Separator();
 
-        if (ImGui.TreeNode("Line Animation")) {
+        if (ImGui.TreeNode("动画设置")) {
             int selected = (int)Globals.Config.saved.DeathAnimation;
-            if (ImGui.ListBox("No Target Animation", ref selected, Enum.GetNames(typeof(LineDeathAnimation)), (int)LineDeathAnimation.Count)) {
+            if (ImGui.ListBox("目标消失动画", ref selected, Enum.GetNames(typeof(LineDeathAnimation)))) {
                 Globals.Config.saved.DeathAnimation = (LineDeathAnimation)selected;
                 should_save = true;
             }
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("The formula to use for flattening the line when there is no longer a target");
+                ImGui.SetTooltip("用于计算曲率变化的方程类型。");
             }
 
-            should_save |= ImGui.SliderFloat("New Target Easing Time", ref Globals.Config.saved.NewTargetEaseTime, 0.0f, 5.0f);
+            should_save |= ImGui.SliderFloat("目标切换动效", ref Globals.Config.saved.NewTargetEaseTime, 0.0f, 5.0f);
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("When switching targets, this represents the time (in seconds) the line will spend shifting to the new target");
+                ImGui.SetTooltip("切换目标时，目标线动效持续的时长。");
             }
 
-            should_save |= ImGui.SliderFloat("No Target Fading Time", ref Globals.Config.saved.NoTargetFadeTime, 0.0f, 5.0f);
+            should_save |= ImGui.SliderFloat("目标消失动效", ref Globals.Config.saved.NoTargetFadeTime, 0.0f, 5.0f);
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("When there is no longer a target, this represents the time (in seconds) the line will spend fading out");
+                ImGui.SetTooltip("目标消失时，目标线动效持续的时长。");
             }
 
-            should_save |= ImGui.SliderFloat("No Target Animation Time Scale", ref Globals.Config.saved.DeathAnimationTimeScale, 1.0f, 4.0f);
+            should_save |= ImGui.SliderFloat("目标消失动效权重", ref Globals.Config.saved.DeathAnimationTimeScale, 1.0f, 4.0f);
             if (ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("A scalar for how quickly the line flattens when there is no target. 1 means the line will be flat at the end of the animation, 2 means it will be flat when 50 percent of the animation has completed");
+                ImGui.SetTooltip("目标消失时动效前后半的权重。1 表示目标线在动画结束时完全变平。2 表示动画到一半时会变平。");
             }
             ImGui.TreePop();
         }
@@ -604,7 +591,7 @@ internal class ConfigWindow : WindowWrapper {
         bool node_hover = false;
         bool nest = false;
         if (ImGui.BeginTabBar("ConfigTabs")) {
-            if (ImGui.BeginTabItem("Filters")) {
+            if (ImGui.BeginTabItem("配置")) {
                 nest = true;
                 node_hover = ImGui.IsItemHovered();
                 should_save |= DrawFilters();
@@ -614,12 +601,12 @@ internal class ConfigWindow : WindowWrapper {
                 node_hover = ImGui.IsItemHovered();
             }
             if (node_hover) {
-                ImGui.SetTooltip("Configure how and when target lines appear");
+                ImGui.SetTooltip("配置目标线出现的条件和方式。");
             }
 
             node_hover = false;
             nest = false;
-            if (ImGui.BeginTabItem("Visuals")) {
+            if (ImGui.BeginTabItem("样式")) {
                 nest = true;
                 node_hover = ImGui.IsItemHovered();
                 should_save |= DrawVisuals();
@@ -629,7 +616,7 @@ internal class ConfigWindow : WindowWrapper {
                 node_hover = ImGui.IsItemHovered();
             }
             if (node_hover) {
-                ImGui.SetTooltip("The appearance and performance of target lines");
+                ImGui.SetTooltip("设置目标线的外观和性能。");
             }
 
             node_hover = false;
@@ -644,7 +631,7 @@ internal class ConfigWindow : WindowWrapper {
                 node_hover = ImGui.IsItemHovered();
             }
             if (node_hover) {
-                ImGui.SetTooltip("Sometimes things are broken");
+                ImGui.SetTooltip("有时候会有bug");
             }
             ImGui.EndTabBar();
         }

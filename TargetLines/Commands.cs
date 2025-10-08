@@ -8,13 +8,13 @@ internal static class Commands {
         Service.CommandManager.AddHandler("/ptlines", new CommandInfo(OnPTLines)
         {
             ShowInHelp = true,
-            HelpMessage = "Toggle the configuration window."
+            HelpMessage = "开启/关闭设置界面"
         });
 
         Service.CommandManager.AddHandler("/ttl", new CommandInfo(OnTTL)
         {
             ShowInHelp = true,
-            HelpMessage = "Toggle target line overlay."
+            HelpMessage = "开启/关闭目标线绘制"
         });
     }
 
@@ -32,13 +32,13 @@ internal static class Commands {
     }
 
     private static void OnTTL(string command, string args) {
-        string str = "on";
+        string str = "打开了";
         Globals.Config.saved.ToggledOff = !Globals.Config.saved.ToggledOff;
 
         if (Globals.Config.saved.ToggledOff) {
-            str = "off";
+            str = "关闭了";
         }
 
-        Service.ChatGui.Print($"Target Lines overlay toggled {str}");
+        Service.ChatGui.Print($"目标线绘制 {str}");
     }
 }

@@ -11,26 +11,23 @@ using static TargetLines.ClassJobHelper;
 namespace TargetLines;
 
 public enum InCombatOption {
-    None = 0,
-    InCombat,
-    NotInCombat,
-    Count
+    无 = 0,
+    战斗中,
+    非战斗中,
 }
 
 public enum LineDeathAnimation {
-    Linear,
-    Square,
-    Cube,
-    Count
+    线性,
+    平方,
+    立方,
 };
 
 public enum LinePartyMode
 {
-    None = 0,
-    PartyOnly,
-    PartyOnlyInAlliance,
-    AllianceOnly,
-    Count
+    无 = 0,
+    仅小队,
+    团队中仅小队,
+    仅团队,
 }
 
 public class TargetSettings {
@@ -177,7 +174,7 @@ public class SavedConfig {
     public int TextureCurveSampleCount = 23;
     public int TextureCurveSampleCountMin = 5;
     public int TextureCurveSampleCountMax = 23;
-    public InCombatOption OnlyInCombat = InCombatOption.None;
+    public InCombatOption OnlyInCombat = InCombatOption.无;
     public bool OnlyUnsheathed = false;
     public bool SolidColor = false;
     public bool FadeToEnd = true;
@@ -190,7 +187,7 @@ public class SavedConfig {
     public bool DynamicSampleCount = true;
     public bool UseScreenSpaceLOD = true;
     public bool ViewAngleSampling = true;
-    public LinePartyMode LinePartyMode = LinePartyMode.None;
+    public LinePartyMode LinePartyMode = LinePartyMode.无;
 
     public bool DebugDynamicSampleCount = false;
     public bool DebugUICollision = false;
@@ -201,7 +198,7 @@ public class SavedConfig {
     public bool DebugDXLines = false;
 
     public LineColor LineColor = new LineColor(new RGBA(0xC0, 0x80, 0x80, 0x80), new RGBA(0x80, 0x00, 0x00, 0x00), true); // fallback color
-    public LineDeathAnimation DeathAnimation = LineDeathAnimation.Linear;
+    public LineDeathAnimation DeathAnimation = LineDeathAnimation.线性;
     public float DeathAnimationTimeScale = 1.0f;
 
     [Obsolete] public RGBA? PlayerPlayerLineColor;
@@ -230,38 +227,38 @@ public class Configuration : IPluginConfiguration {
         LineColors = new List<TargetSettingsPair>() {
                 // player -> player default
                 new TargetSettingsPair(
-                    new TargetSettings(TargetFlags.Player),
-                    new TargetSettings(TargetFlags.Player),
+                    new TargetSettings(TargetFlags.玩家),
+                    new TargetSettings(TargetFlags.玩家),
                     new LineColor(new RGBA(0xC0, 0x50, 0xAF, 0x4C), true, false) // greenish
                 ),
                 // player -> party (Focus) default
                 new TargetSettingsPair(
-                    new TargetSettings(TargetFlags.Player),
-                    new TargetSettings(TargetFlags.Party),
+                    new TargetSettings(TargetFlags.玩家),
+                    new TargetSettings(TargetFlags.小队),
                     new LineColor(new RGBA(0xC0, 0xB0, 0x27, 0x9C), true, true), -1, true // greenish
                 ),
                 // player -> enemy default
                 new TargetSettingsPair(
-                    new TargetSettings(TargetFlags.Player),
-                    new TargetSettings(TargetFlags.Enemy),
+                    new TargetSettings(TargetFlags.玩家),
+                    new TargetSettings(TargetFlags.敌人),
                     new LineColor(new RGBA(0x80, 0x36, 0x43, 0xF4), true, false) // reddish
                 ), 
                 // enemy -> player default
                 new TargetSettingsPair(
-                    new TargetSettings(TargetFlags.Enemy),
-                    new TargetSettings(TargetFlags.Player),
+                    new TargetSettings(TargetFlags.敌人),
+                    new TargetSettings(TargetFlags.玩家),
                     new LineColor(new RGBA(0xC0, 0x00, 0x00, 0xFF), true, true) // red
                 ),
                 // enemy -> enemy default
                 new TargetSettingsPair(
-                    new TargetSettings(TargetFlags.Enemy),
-                    new TargetSettings(TargetFlags.Enemy),
+                    new TargetSettings(TargetFlags.敌人),
+                    new TargetSettings(TargetFlags.敌人),
                     new LineColor(new RGBA(0xC0, 0xB0, 0x27, 0x9C), true, true) // purpleish
                 ),
                 // any -> any default (invisible)
                 new TargetSettingsPair(
-                    new TargetSettings(TargetFlags.Any),
-                    new TargetSettings(TargetFlags.Any),
+                    new TargetSettings(TargetFlags.任意),
+                    new TargetSettings(TargetFlags.任意),
                     new LineColor(new RGBA(0xC0, 0x80, 0x80, 0x80), false, false), // grey
                     0
                 )
@@ -282,13 +279,13 @@ public class Configuration : IPluginConfiguration {
         }
 
         if (saved.OnlyInCombat is bool) {
-            saved.OnlyInCombat = InCombatOption.None;
-            Service.ChatGui.Print("Warning! If you had the \"OnlyInCombat\" setting set, you will have to reenable it!");
+            saved.OnlyInCombat = InCombatOption.无;
+            Service.ChatGui.Print("注意！如果你启用了“仅战斗中”选项的话，你将需要再次自行手动启用！");
         }
 
         if (saved.PlayerPlayerLineColor != null) {
-            TargetSettings from =  new TargetSettings(TargetFlags.Player, 0);
-            TargetSettings to = new TargetSettings(TargetFlags.Player, 0);
+            TargetSettings from =  new TargetSettings(TargetFlags.玩家, 0);
+            TargetSettings to = new TargetSettings(TargetFlags.玩家, 0);
 
             LineColorsWasNull++;
             LineColors.Add(new TargetSettingsPair(from, to, new LineColor((RGBA)saved.PlayerPlayerLineColor, (RGBA)saved.OutlineColor, true)));
@@ -297,8 +294,8 @@ public class Configuration : IPluginConfiguration {
         }
 
         if (saved.PlayerEnemyLineColor != null) {
-            TargetSettings from = new TargetSettings(TargetFlags.Player, 0);
-            TargetSettings to = new TargetSettings(TargetFlags.Enemy, 0);
+            TargetSettings from = new TargetSettings(TargetFlags.玩家, 0);
+            TargetSettings to = new TargetSettings(TargetFlags.敌人, 0);
 
             LineColorsWasNull++;
             LineColors.Add(new TargetSettingsPair(from, to, new LineColor((RGBA)saved.PlayerEnemyLineColor, (RGBA)saved.OutlineColor, true)));
@@ -306,8 +303,8 @@ public class Configuration : IPluginConfiguration {
         }
 
         if (saved.EnemyPlayerLineColor != null) {
-            TargetSettings from = new TargetSettings(TargetFlags.Enemy, 0);
-            TargetSettings to = new TargetSettings(TargetFlags.Player, 0);
+            TargetSettings from = new TargetSettings(TargetFlags.敌人, 0);
+            TargetSettings to = new TargetSettings(TargetFlags.玩家, 0);
 
             LineColorsWasNull++;
             LineColors.Add(new TargetSettingsPair(from, to, new LineColor((RGBA)saved.EnemyPlayerLineColor, (RGBA)saved.OutlineColor, true)));
@@ -315,8 +312,8 @@ public class Configuration : IPluginConfiguration {
         }
 
         if (saved.EnemyEnemyLineColor != null) {
-            TargetSettings from = new TargetSettings(TargetFlags.Enemy, 0);
-            TargetSettings to = new TargetSettings(TargetFlags.Enemy, 0);
+            TargetSettings from = new TargetSettings(TargetFlags.敌人, 0);
+            TargetSettings to = new TargetSettings(TargetFlags.敌人, 0);
 
             LineColorsWasNull++;
             LineColors.Add(new TargetSettingsPair(from, to, new LineColor((RGBA)saved.EnemyEnemyLineColor, (RGBA)saved.OutlineColor, true)));

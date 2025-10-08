@@ -1,10 +1,8 @@
-﻿using System.Runtime.CompilerServices;
+﻿[assembly: System.Reflection.AssemblyCompany("TargetLinesX")]
+[assembly: System.Reflection.AssemblyProduct("TargetLinesX")]
+[assembly: System.Reflection.AssemblyTitle("TargetLinesX")]
 
-[assembly: System.Reflection.AssemblyCompany("TargetLines")]
-[assembly: System.Reflection.AssemblyProduct("TargetLines")]
-[assembly: System.Reflection.AssemblyTitle("TargetLines")]
-
-[assembly: System.Reflection.AssemblyVersion("1.9.0")]
+[assembly: System.Reflection.AssemblyVersion("1.9.2")]
 
 #if DEBUG
 [assembly: System.Reflection.AssemblyConfiguration("Debug")]
